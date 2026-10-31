@@ -12,11 +12,11 @@ export type Vec3 = [number, number, number];
 
 export type VehicleCategory =
   | 'hatchback'
+  | 'compact'
   | 'sedan'
+  | 'saloon'
   | 'suv'
   | 'sports'
-  | 'compact'
-  | 'saloon'
   | 'electric-roadster';
 
 export interface VehicleDimensions {
@@ -49,6 +49,8 @@ export interface VehicleRuntimeState {
   steeringAngle: number;
   collisionCount: number;
   isMoving: boolean;
+  isBraking?: boolean;
+  isReversing?: boolean;
 }
 
 /* Stage 1 Extended Architectural Interfaces */

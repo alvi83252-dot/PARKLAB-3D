@@ -16,7 +16,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <Link to={APP_ROUTES.HOME} className="app-brand">
             <CarFront size={20} className="app-brand__icon" aria-hidden="true" />
             <span>{APP_CONFIG.name}</span>
-            <span className="app-brand__badge">STAGE 1</span>
+            <span className="app-brand__badge">LIVE 3D</span>
           </Link>
 
           <nav className="app-nav" aria-label="Primary navigation">
