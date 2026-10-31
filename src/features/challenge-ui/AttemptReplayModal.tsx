@@ -25,6 +25,7 @@ export interface AttemptReplayModalProps {
   allSavedReplays: SavedAttemptReplay[];
   onSelectReplay: (replay: SavedAttemptReplay) => void;
   onDeleteReplay: (replayId: string) => void;
+  onWatchIn3D?: (replay: SavedAttemptReplay) => void;
   onClose: () => void;
 }
 
@@ -37,6 +38,7 @@ export function AttemptReplayModal({
   allSavedReplays,
   onSelectReplay,
   onDeleteReplay,
+  onWatchIn3D,
   onClose,
 }: AttemptReplayModalProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -381,6 +383,18 @@ export function AttemptReplayModal({
                   </button>
                 ))}
               </div>
+
+              {onWatchIn3D && (
+                <button
+                  type="button"
+                  className="pk-btn pk-btn--replay"
+                  onClick={() => onWatchIn3D(activeReplay)}
+                  title="Launch this saved attempt in the interactive 3D viewport"
+                >
+                  <Film size={13} aria-hidden="true" />
+                  <span>Watch in 3D</span>
+                </button>
+              )}
             </div>
           </div>
 

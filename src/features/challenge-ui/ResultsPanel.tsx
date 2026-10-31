@@ -59,8 +59,10 @@ export interface ResultsPanelProps {
   vehicleName?: string;
   /** Controlled callback to retry the current challenge */
   onRetry: () => void;
-  /** Optional callback to watch 3D replay (ONLY provided when a challenge is completed/passed) */
+  /** Optional callback to watch 3D replay in the 3D viewport */
   onWatchReplay?: () => void;
+  /** Optional callback to open the 2D Telemetry Replay Theatre */
+  onOpenReplayTheatre?: () => void;
   /** Controlled callback to advance to the next challenge */
   onNextChallenge?: () => void;
   /** Alias for onNextChallenge for flexible integration */
@@ -77,6 +79,7 @@ export function ResultsPanel({
   vehicleName = 'New Tesla Roadster',
   onRetry,
   onWatchReplay,
+  onOpenReplayTheatre,
   onNextChallenge,
   onNext,
 }: ResultsPanelProps) {
@@ -397,7 +400,18 @@ export function ResultsPanel({
             onClick={onWatchReplay}
           >
             <Film size={14} aria-hidden="true" />
-            <span>Watch Replay</span>
+            <span>Watch 3D Replay</span>
+          </button>
+        )}
+
+        {onOpenReplayTheatre && (
+          <button
+            type="button"
+            className="pk-btn pk-btn--secondary"
+            onClick={onOpenReplayTheatre}
+          >
+            <History size={14} aria-hidden="true" />
+            <span>2D Telemetry Replay</span>
           </button>
         )}
 
