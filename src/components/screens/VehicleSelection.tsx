@@ -13,6 +13,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { APP_ROUTES } from '../../constants/routes';
+import { CustomizationStudioPanel } from '../ui/CustomizationStudioPanel';
+import { useCustomization } from '../../config/customization.config';
 import {
   VEHICLES,
   VehicleModel,
@@ -50,6 +52,7 @@ function ShowroomVehicleStage({
   });
   const chassis = useMemo(() => getChassisSpec(vehicle), [vehicle]);
   const isFlying = Boolean(chassis.isFlyingVehicle);
+  const { themeSpec } = useCustomization();
 
   useFrame(({ clock }, delta) => {
     const t = clock.getElapsedTime();
@@ -117,7 +120,10 @@ function ShowroomVehicleStage({
   return (
     <group>
       <ambientLight intensity={0.75} />
-      <hemisphereLight args={['#bae6fd', '#0f172a', 0.7]} position={[0, 15, 0]} />
+      <hemisphereLight
+        args={[themeSpec.hemiSkyColor, themeSpec.hemiGroundColor, 0.7]}
+        position={[0, 15, 0]}
+      />
       <directionalLight
         position={[8, 12, 9]}
         intensity={1.7}
@@ -125,27 +131,48 @@ function ShowroomVehicleStage({
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <directionalLight position={[-8, 6, -7]} intensity={0.65} color="#38bdf8" />
+      <directionalLight
+        position={[-8, 6, -7]}
+        intensity={0.65}
+        color={themeSpec.buildingAccentColor}
+      />
       <pointLight
         position={[0, 2.8, -3.5]}
         intensity={isFlying ? 1.4 : 0.6}
         color={isFlying ? '#38bdf8' : '#f8fafc'}
       />
 
-      {/* Showroom Turntable Platform */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+      {/* Showroom Turntable Platform (Adapts to active 3D Environment Theme) */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.01, 0]}
+        receiveShadow
+      >
         <circleGeometry args={[3.8, 64]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.65} metalness={0.25} />
+        <meshStandardMaterial
+          color={themeSpec.asphaltColor}
+          roughness={themeSpec.surfaceRoughness}
+          metalness={themeSpec.surfaceMetalness}
+        />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]}>
         <ringGeometry args={[3.45, 3.55, 64]} />
         <meshBasicMaterial
-          color={isFlying ? '#38bdf8' : vehicle.bodyColor}
+          color={
+            themeSpec.id === 'uk-test-centre'
+              ? isFlying
+                ? '#38bdf8'
+                : vehicle.bodyColor
+              : themeSpec.buildingAccentColor
+          }
           transparent
           opacity={0.75}
         />
       </mesh>
-      <gridHelper args={[16, 16, '#1e293b', '#131c2e']} position={[0, -0.008, 0]} />
+      <gridHelper
+        args={[16, 16, themeSpec.kerbColor, themeSpec.apronColor]}
+        position={[0, -0.008, 0]}
+      />
 
       {/* 3D Vehicle Model */}
       <group ref={bodyGroupRef}>
@@ -222,7 +249,7 @@ export function VehicleSelection() {
         <div>
           <div className="placeholder-card__eyebrow" style={{ marginBottom: '6px' }}>
             <Car size={14} aria-hidden="true" />
-            <span>3D Fleet Hangar &amp; Telemetry Inspection</span>
+            <span>3D Fleet Hangar &amp; Creative Workshop</span>
           </div>
           <h1
             id="vehicle-screen-title"
@@ -234,7 +261,7 @@ export function VehicleSelection() {
               letterSpacing: '-0.02em',
             }}
           >
-            Select Your 3D Vehicle — Including the Flying Tesla Roadster
+            Select &amp; Customize Your 3D Car and World
           </h1>
         </div>
 
@@ -330,7 +357,7 @@ export function VehicleSelection() {
               {selectedVehicle.name}
             </div>
             <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
-              Drag to orbit 360° • Scroll to zoom • Inspect 3D geometry
+              Drag to orbit 360° • Scroll to zoom • Live skin &amp; topper preview
             </div>
           </div>
 
@@ -570,6 +597,9 @@ export function VehicleSelection() {
           </div>
         </div>
       </div>
+
+      {/* Creative 3D Car & World Customization Workshop */}
+      <CustomizationStudioPanel />
     </section>
   );
 }
