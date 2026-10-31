@@ -1189,8 +1189,9 @@ export function ChallengeHUD({
                     activeFlightBtn === 'ascend' ? 'is-active' : ''
                   }`}
                   onPointerDown={(e) => {
-                    e.currentTarget.setPointerCapture(e.pointerId);
+                    e.currentTarget.setPointerCapture?.(e.pointerId);
                     setActiveFlightBtn('ascend');
+                    setVirtualDrivingInput('descend', false);
                     setVirtualDrivingInput('ascend', true);
                   }}
                   onPointerUp={() => {
@@ -1198,6 +1199,10 @@ export function ChallengeHUD({
                     setVirtualDrivingInput('ascend', false);
                   }}
                   onPointerCancel={() => {
+                    setActiveFlightBtn(null);
+                    setVirtualDrivingInput('ascend', false);
+                  }}
+                  onLostPointerCapture={() => {
                     setActiveFlightBtn(null);
                     setVirtualDrivingInput('ascend', false);
                   }}
@@ -1210,8 +1215,9 @@ export function ChallengeHUD({
                     activeFlightBtn === 'descend' ? 'is-active' : ''
                   }`}
                   onPointerDown={(e) => {
-                    e.currentTarget.setPointerCapture(e.pointerId);
+                    e.currentTarget.setPointerCapture?.(e.pointerId);
                     setActiveFlightBtn('descend');
+                    setVirtualDrivingInput('ascend', false);
                     setVirtualDrivingInput('descend', true);
                   }}
                   onPointerUp={() => {
@@ -1219,6 +1225,10 @@ export function ChallengeHUD({
                     setVirtualDrivingInput('descend', false);
                   }}
                   onPointerCancel={() => {
+                    setActiveFlightBtn(null);
+                    setVirtualDrivingInput('descend', false);
+                  }}
+                  onLostPointerCapture={() => {
                     setActiveFlightBtn(null);
                     setVirtualDrivingInput('descend', false);
                   }}
@@ -1457,8 +1467,12 @@ export function ChallengeHUD({
           )}
         </span>
       </div>
-      {/* Mobile-Only Virtual Thumbstick (Right) & Brake (Left) */}
-      <MobileThumbstick />
+      {/* Mobile-Only Virtual Thumbstick (Right) & Brake + Roadster 3D Flight Controls (Left) */}
+      <MobileThumbstick
+        isFlyingCapable={isFlyingCapable}
+        altitudeMeters={altitudeMeters}
+        isAirborne={isAirborne}
+      />
     </aside>
   );
 }

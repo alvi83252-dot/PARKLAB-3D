@@ -1,8 +1,11 @@
 /**
- * PARKLAB 3D — Mobile Virtual Thumbstick (Right) & Touch Handbrake (Left)
+ * PARKLAB 3D — Mobile Virtual Thumbstick (Right) & Touch Handbrake + 3D Flight Controls (Left)
  *
  * Ergonomic dual-thumb mobile layout:
- * - Left Thumb (Bottom-Left): Dedicated BRAKE / STOP pedal (`handbrake`)
+ * - Left Thumb (Bottom-Left):
+ *   - Dedicated BRAKE / STOP pedal (`handbrake`)
+ *   - When driving a flight-capable vehicle (Tesla Roadster): SpaceX 3D Flight vertical thrusters
+ *     (`▲ FLY UP` for `ascend`, `▼ DOWN` for `descend`) + live Altitude readout.
  * - Right Thumb (Bottom-Right): 360° Drive & Steer thumbstick (`accelerate`, `brakeOrReverse`, `steerLeft`, `steerRight`)
  */
 
@@ -16,10 +19,19 @@ const DEADZONE_RATIO = 0.24;
 export interface MobileThumbstickProps {
   /** Force-show thumbstick even on desktop viewports when enabled */
   forceVisible?: boolean;
+  /** Whether the active vehicle supports 3D vertical flight (e.g. Tesla Roadster) */
+  isFlyingCapable?: boolean;
+  /** Current altitude in meters */
+  altitudeMeters?: number;
+  /** Whether the vehicle is currently airborne */
+  isAirborne?: boolean;
 }
 
 export function MobileThumbstick({
   forceVisible = false,
+  isFlyingCapable = false,
+  altitudeMeters = 0,
+  isAirborne = false,
 }: MobileThumbstickProps) {
   const baseRef = useRef<HTMLDivElement | null>(null);
   const activePointerIdRef = useRef<number | null>(null);
@@ -30,6 +42,9 @@ export function MobileThumbstick({
   });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isBrakingTouch, setIsBrakingTouch] = useState<boolean>(false);
+  const [activeFlightTouch, setActiveFlightTouch] = useState<
+    'ascend' | 'descend' | null
+  >(null);
 
   const syncDirectionInputs = useCallback((normX: number, normY: number) => {
     // Vertical axis: negative Y is UP (Accelerate), positive Y is DOWN (Brake / Reverse)
@@ -118,10 +133,50 @@ export function MobileThumbstick({
     setVirtualDrivingInput('handbrake', false);
   };
 
+  const handleAscendDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    setActiveFlightTouch('ascend');
+    setVirtualDrivingInput('descend', false);
+    setVirtualDrivingInput('ascend', true);
+  };
+
+  const handleAscendUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setActiveFlightTouch((prev) => (prev === 'ascend' ? null : prev));
+    setVirtualDrivingInput('ascend', false);
+  };
+
+  const handleDescendDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    setActiveFlightTouch('descend');
+    setVirtualDrivingInput('ascend', false);
+    setVirtualDrivingInput('descend', true);
+  };
+
+  const handleDescendUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setActiveFlightTouch((prev) => (prev === 'descend' ? null : prev));
+    setVirtualDrivingInput('descend', false);
+  };
+
+  useEffect(() => {
+    if (!isFlyingCapable) {
+      setActiveFlightTouch(null);
+      setVirtualDrivingInput('ascend', false);
+      setVirtualDrivingInput('descend', false);
+    }
+  }, [isFlyingCapable]);
+
   useEffect(() => {
     return () => {
       releaseAllStickInputs();
       setVirtualDrivingInput('handbrake', false);
+      setVirtualDrivingInput('ascend', false);
+      setVirtualDrivingInput('descend', false);
     };
   }, [releaseAllStickInputs]);
 
@@ -132,19 +187,64 @@ export function MobileThumbstick({
       }`}
       aria-label="Mobile Touch Driving Controls"
     >
-      {/* LEFT SIDE: Dedicated Touch Handbrake / Stop Thumb Button */}
-      <button
-        type="button"
-        className={`pk-thumbstick-brake ${
-          isBrakingTouch ? 'pk-thumbstick-brake--active' : ''
-        }`}
-        onPointerDown={handleBrakeDown}
-        onPointerUp={handleBrakeUp}
-        onPointerCancel={handleBrakeUp}
-      >
-        <span>BRAKE</span>
-        <small>STOP</small>
-      </button>
+      {/* LEFT SIDE: Touch Handbrake + Roadster SpaceX 3D Flight Up/Down Thrusters */}
+      <div className="pk-thumbstick-left-cluster">
+        {isFlyingCapable && (
+          <div
+            className={`pk-thumbstick-flight-stack ${
+              isAirborne ? 'pk-thumbstick-flight-stack--airborne' : ''
+            }`}
+            role="group"
+            aria-label="Roadster 3D Flight Controls"
+          >
+            <span className="pk-thumbstick-alt-badge">
+              ALT {altitudeMeters.toFixed(1)}m
+            </span>
+            <button
+              type="button"
+              className={`pk-thumbstick-flight-btn pk-thumbstick-flight-btn--up ${
+                activeFlightTouch === 'ascend' ? 'is-active' : ''
+              }`}
+              onPointerDown={handleAscendDown}
+              onPointerUp={handleAscendUp}
+              onPointerCancel={handleAscendUp}
+              onLostPointerCapture={handleAscendUp}
+              aria-label="Fly Up (Ascend)"
+              data-testid="mobile-fly-up-btn"
+            >
+              <span>▲ FLY UP</span>
+            </button>
+            <button
+              type="button"
+              className={`pk-thumbstick-flight-btn pk-thumbstick-flight-btn--down ${
+                activeFlightTouch === 'descend' ? 'is-active' : ''
+              }`}
+              onPointerDown={handleDescendDown}
+              onPointerUp={handleDescendUp}
+              onPointerCancel={handleDescendUp}
+              onLostPointerCapture={handleDescendUp}
+              aria-label="Fly Down (Descend)"
+              data-testid="mobile-fly-down-btn"
+            >
+              <span>▼ DOWN</span>
+            </button>
+          </div>
+        )}
+
+        <button
+          type="button"
+          className={`pk-thumbstick-brake ${
+            isBrakingTouch ? 'pk-thumbstick-brake--active' : ''
+          }`}
+          onPointerDown={handleBrakeDown}
+          onPointerUp={handleBrakeUp}
+          onPointerCancel={handleBrakeUp}
+          onLostPointerCapture={handleBrakeUp}
+        >
+          <span>BRAKE</span>
+          <small>STOP</small>
+        </button>
+      </div>
 
       {/* RIGHT SIDE: 360° Driving & Steering Thumbstick */}
       <div
@@ -156,6 +256,7 @@ export function MobileThumbstick({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUpOrCancel}
         onPointerCancel={handlePointerUpOrCancel}
+        onLostPointerCapture={handlePointerUpOrCancel}
         role="slider"
         aria-label="Drive and Steer Thumbstick"
         aria-valuenow={Math.round((knobOffset.x / STICK_RADIUS_PX) * 100)}
