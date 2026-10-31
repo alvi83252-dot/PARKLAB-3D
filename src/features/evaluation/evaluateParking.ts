@@ -284,6 +284,7 @@ function getParMetricsForDifficulty(difficulty: ChallengeDifficulty): {
     case 'intermediate':
       return { parSeconds: 50, parCorrections: 2 };
     case 'advanced':
+    case 'expert':
       return { parSeconds: 60, parCorrections: 2 };
   }
 }

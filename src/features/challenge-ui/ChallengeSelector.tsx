@@ -32,6 +32,7 @@ const DIFFICULTY_LABELS: Record<ChallengeDifficulty, string> = {
   beginner: 'Beginner',
   intermediate: 'Intermediate',
   advanced: 'Advanced',
+  expert: 'Expert',
 };
 
 export function ChallengeSelector({
