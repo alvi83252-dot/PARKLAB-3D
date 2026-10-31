@@ -794,8 +794,674 @@
   flex-wrap: wrap;
 }
 
+.pk-results__comparison-box {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: linear-gradient(
+    165deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(17, 21, 28, 0.96) 80%
+  );
+}
+
+.pk-results__rag-box {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.pk-results__feedback-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 /* ==========================================================================
-   4. RESPONSIVE BREAKPOINTS
+   4. AI CRASH COACH PANEL & MULTIMODAL CONTROLS BAR
+   ========================================================================== */
+
+.pk-hud__center-slot {
+  grid-area: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+.pk-crash-coach {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 440px;
+  max-height: 64vh;
+  overflow-y: auto;
+  background-color: rgba(15, 20, 28, 0.93);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(239, 68, 68, 0.52);
+  border-radius: var(--radius-md, 0.625rem);
+  padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  color: var(--color-text-primary, #f8fafc);
+}
+
+.pk-crash-coach__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pk-crash-coach__badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.pk-crash-coach__alert-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-pill, 9999px);
+  color: #fecaca;
+  background-color: rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.pk-crash-coach__attempt-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.pk-crash-coach__speaking-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.14rem 0.48rem;
+  border-radius: var(--radius-pill, 9999px);
+  color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+}
+
+.pk-crash-coach__close-btn {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: var(--color-text-secondary, #94a3b8);
+  border-radius: var(--radius-sm, 0.375rem);
+  padding: 0.2rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pk-crash-coach__close-btn:hover {
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.pk-crash-coach__telemetry-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.35rem 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(11, 13, 16, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.pk-crash-coach__telemetry-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.pk-crash-coach__telemetry-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted, #64748b);
+}
+
+.pk-crash-coach__telemetry-val {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.pk-crash-coach__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pk-crash-coach__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pk-crash-coach__section-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent-hover, #60a5fa);
+}
+
+.pk-crash-coach__text {
+  font-size: 0.78rem;
+  line-height: 1.42;
+  color: #f8fafc;
+}
+
+.pk-crash-coach__subtext {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.pk-crash-coach__uncertainty {
+  font-size: 0.68rem;
+  font-style: italic;
+  color: #fbbf24;
+}
+
+.pk-crash-coach__repeat-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  font-size: 0.72rem;
+  color: #fde68a;
+  line-height: 1.38;
+}
+
+.pk-crash-coach__advice-box {
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background: linear-gradient(
+    145deg,
+    rgba(59, 130, 246, 0.15),
+    rgba(16, 185, 129, 0.1)
+  );
+  border: 1px solid rgba(59, 130, 246, 0.38);
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.pk-crash-coach__advice-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #34d399;
+}
+
+.pk-crash-coach__advice-text {
+  font-size: 0.76rem;
+  line-height: 1.42;
+  color: #f8fafc;
+}
+
+.pk-crash-coach__focus-row {
+  font-size: 0.73rem;
+  color: #93c5fd;
+  line-height: 1.38;
+}
+
+.pk-crash-coach__cue-note {
+  font-size: 0.66rem;
+  color: var(--color-text-secondary, #94a3b8);
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding-top: 0.25rem;
+}
+
+.pk-crash-coach__comparison {
+  padding: 0.4rem 0.55rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pk-crash-coach__comparison-list {
+  padding-left: 1rem;
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pk-crash-coach__rag-drawer {
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  padding-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pk-crash-coach__rag-toggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary, #94a3b8);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.66rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.pk-crash-coach__rag-toggle-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pk-crash-coach__rag-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pk-crash-coach__rag-item {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.3rem;
+  background-color: rgba(11, 13, 16, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pk-crash-coach__rag-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pk-crash-coach__rag-source-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: 0.25rem;
+  background-color: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.pk-crash-coach__rag-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  flex: 1;
+}
+
+.pk-crash-coach__rag-score {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  color: #34d399;
+}
+
+.pk-crash-coach__rag-summary {
+  font-size: 0.67rem;
+  color: var(--color-text-secondary, #94a3b8);
+  line-height: 1.35;
+}
+
+.pk-crash-coach__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.pk-crash-coach__voice-btns,
+.pk-crash-coach__action-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* AI Coach Controls Bar */
+.pk-coach-bar {
+  width: 100%;
+  background-color: var(--color-bg-surface, #161b24);
+  border: 1px solid var(--color-border-subtle, rgba(148, 163, 184, 0.16));
+  border-radius: var(--radius-md, 0.625rem);
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.pk-coach-bar__main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pk-coach-bar__brand-cluster,
+.pk-coach-bar__controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.pk-coach-bar__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.22rem 0.65rem;
+  border-radius: var(--radius-pill, 9999px);
+}
+
+.pk-coach-bar__pill--accent {
+  color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.38);
+}
+
+.pk-coach-bar__memory-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--color-text-secondary, #94a3b8);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.pk-coach-bar__subpanel {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(11, 13, 16, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.pk-coach-bar__slider-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pk-coach-bar__voice-meta {
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.68rem;
+}
+
+.pk-coach-bar__notice {
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  font-size: 0.75rem;
+  color: #fde68a;
+}
+
+/* Webcam Preview Strip */
+.pk-webcam-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(11, 13, 16, 0.78);
+  border: 1px solid rgba(16, 185, 129, 0.38);
+}
+
+.pk-webcam-preview__video-wrap {
+  position: relative;
+  width: 124px;
+  height: 92px;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  background-color: #000000;
+  flex-shrink: 0;
+}
+
+.pk-webcam-preview__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.pk-webcam-preview__live-dot {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+  background-color: rgba(16, 185, 129, 0.88);
+  color: #052e16;
+}
+
+.pk-webcam-preview__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 220px;
+}
+
+.pk-webcam-preview__cue-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pk-webcam-preview__cue-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.pk-webcam-preview__metrics {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.pk-webcam-preview__privacy-note {
+  font-size: 0.68rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+/* Attempt Comparison Banner */
+.pk-attempt-compare-banner {
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.14) 0%,
+    rgba(16, 185, 129, 0.08) 100%
+  );
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pk-attempt-compare-banner__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #93c5fd;
+}
+
+.pk-attempt-compare-banner__list {
+  padding-left: 1.1rem;
+  font-size: 0.73rem;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Ask Coach Drawer */
+.pk-ask-coach {
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(11, 13, 16, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pk-ask-coach__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pk-ask-coach__title {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38bdf8;
+}
+
+.pk-ask-coach__chips {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pk-ask-coach__chip {
+  background-color: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+  font-size: 0.68rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.pk-ask-coach__chip:hover {
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.pk-ask-coach__form {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.pk-ask-coach__input {
+  flex: 1;
+  min-width: 210px;
+  padding: 0.42rem 0.65rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: #161b24;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #f8fafc;
+  font-size: 0.76rem;
+  font-family: inherit;
+}
+
+.pk-ask-coach__input:focus {
+  outline: none;
+  border-color: #38bdf8;
+}
+
+.pk-ask-coach__disclosure {
+  font-size: 0.65rem;
+  color: var(--color-text-muted, #64748b);
+}
+
+.pk-ask-coach__error {
+  font-size: 0.72rem;
+  color: #fbbf24;
+}
+
+.pk-ask-coach__answer {
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background-color: rgba(30, 41, 59, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pk-ask-coach__question-line {
+  font-size: 0.72rem;
+  color: #93c5fd;
+}
+
+.pk-ask-coach__answer-text {
+  font-size: 0.76rem;
+  color: #f8fafc;
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   5. RESPONSIVE BREAKPOINTS
    ========================================================================== */
 
 @media (max-width: 900px) {
@@ -803,6 +1469,7 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       'mission telemetry'
+      'center center'
       'instructions controls';
   }
 
@@ -816,6 +1483,7 @@
     grid-template-columns: 1fr;
     grid-template-areas:
       'mission'
+      'center'
       'telemetry'
       'instructions'
       'controls';

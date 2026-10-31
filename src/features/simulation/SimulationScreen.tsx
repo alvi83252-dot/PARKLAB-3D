@@ -44,9 +44,11 @@ import {
 } from '../challenges';
 import {
   evaluateParking,
+  useCrashFeedbackLoop,
   type PullUpRightTelemetryExtension,
 } from '../evaluation';
 import {
+  AICoachControlsBar,
   ChallengeSelector,
   ChallengeHUD,
   ResultsPanel,
@@ -74,7 +76,8 @@ function createInitialVehicleState(
 /**
  * Main integrated simulation screen (Section 4.7).
  * Connects Faizan's 3D World & Camera, Joachim's Vehicle Physics & Models,
- * Anjila's Challenges, Evaluation & Gameplay HUD, and the 3D Car & World Customization Studio.
+ * Anjila's Challenges, Evaluation, AI RAG Coach & Gameplay HUD,
+ * and the 3D Car & World Customization Studio.
  */
 export function SimulationScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -134,7 +137,16 @@ export function SimulationScreen() {
   const [evaluationResult, setEvaluationResult] =
     useState<ParkingEvaluationResult | null>(null);
 
+  const crashLoop = useCrashFeedbackLoop({
+    challenge: activeChallenge,
+    vehicle: selectedVehicle,
+  });
+
   // Refs for accurate manoeuvre telemetry tracking across animation frames
+  const latestVehicleStateRef = useRef<VehicleRuntimeState>(vehicleState);
+  latestVehicleStateRef.current = vehicleState;
+  const latestMetricsRef = useRef<ExtendedAttemptMetrics>(metrics);
+  latestMetricsRef.current = metrics;
   const hasEnteredReverseRef = useRef<boolean>(false);
   const lastActiveGearRef = useRef<'forward' | 'reverse' | null>(null);
   const lastPositionRef = useRef<[number, number, number]>(
@@ -255,6 +267,10 @@ export function SimulationScreen() {
   );
 
   const handleResetAttempt = useCallback(() => {
+    crashLoop.finalizeAttemptForRetry(
+      latestMetricsRef.current.elapsedSeconds,
+      latestMetricsRef.current.corrections
+    );
     resetAttemptState(
       activeChallenge.spawnPosition,
       activeChallenge.spawnRotationY
@@ -262,6 +278,7 @@ export function SimulationScreen() {
   }, [
     activeChallenge.spawnPosition,
     activeChallenge.spawnRotationY,
+    crashLoop,
     resetAttemptState,
   ]);
 
@@ -271,7 +288,12 @@ export function SimulationScreen() {
 
   const handleVehicleStateChange = useCallback(
     (nextState: VehicleRuntimeState) => {
+      latestVehicleStateRef.current = nextState;
       setVehicleState(nextState);
+      crashLoop.recordTelemetryFrame(
+        nextState,
+        latestMetricsRef.current.elapsedSeconds
+      );
 
       const prevPos = lastPositionRef.current;
       const stepDist = Math.hypot(
@@ -340,17 +362,24 @@ export function SimulationScreen() {
         };
       });
     },
-    [activeChallenge.id]
+    [activeChallenge.id, crashLoop]
   );
 
   const handleCollision = useCallback(
-    (_obstacle: ObstacleDefinition, totalCollisions: number) => {
+    (obstacle: ObstacleDefinition, totalCollisions: number) => {
       setMetrics((prev) => ({
         ...prev,
         collisions: Math.max(prev.collisions, totalCollisions),
       }));
+      crashLoop.recordCollision(
+        obstacle,
+        totalCollisions,
+        latestVehicleStateRef.current,
+        latestMetricsRef.current.elapsedSeconds,
+        latestMetricsRef.current.corrections
+      );
     },
-    []
+    [crashLoop]
   );
 
   const handleEvaluate = useCallback(() => {
@@ -361,7 +390,12 @@ export function SimulationScreen() {
       metrics
     );
     setEvaluationResult(result);
-  }, [activeChallenge, selectedVehicle, vehicleState, metrics]);
+    crashLoop.recordEvaluationCompleted(
+      result,
+      metrics.elapsedSeconds,
+      metrics.corrections
+    );
+  }, [activeChallenge, crashLoop, selectedVehicle, vehicleState, metrics]);
 
   const handleNextChallenge = useCallback(() => {
     const currentIndex = CHALLENGES.findIndex(
@@ -685,9 +719,15 @@ export function SimulationScreen() {
             vehicle={selectedVehicle}
             metrics={metrics}
             cameraMode={cameraMode}
+            attemptNumber={crashLoop.attemptNumber}
+            activeCrashReport={crashLoop.activeCrashReport}
+            isVoiceSpeaking={crashLoop.voiceCoach.isSpeaking}
             onEvaluate={handleEvaluate}
             onReset={handleResetAttempt}
             onToggleCamera={handleToggleCamera}
+            onDismissCrashReport={crashLoop.dismissCrashReport}
+            onReplayCrashVoice={crashLoop.voiceCoach.replayLastCoaching}
+            onStopCrashVoice={crashLoop.voiceCoach.stopSpeaking}
           />
         </div>
 
@@ -710,12 +750,27 @@ export function SimulationScreen() {
             <ResultsPanel
               result={evaluationResult}
               challenge={activeChallenge}
+              attemptComparison={crashLoop.attemptComparison}
+              recentCrashReport={crashLoop.activeCrashReport}
               onRetry={handleResetAttempt}
               onNextChallenge={handleNextChallenge}
             />
           </div>
         )}
       </div>
+
+      {/* Multimodal AI Voice Coach, Opt-In Webcam Observer & RAG Controls Bar */}
+      <AICoachControlsBar
+        attemptNumber={crashLoop.attemptNumber}
+        totalStoredCrashes={crashLoop.totalStoredCrashes}
+        totalStoredAttempts={crashLoop.totalStoredAttempts}
+        voiceCoach={crashLoop.voiceCoach}
+        webcamObserver={crashLoop.webcamObserver}
+        latestQAExchange={crashLoop.latestQAExchange}
+        attemptComparison={crashLoop.attemptComparison}
+        onAskCoach={crashLoop.askCoach}
+        onResetMemory={crashLoop.resetRAGMemory}
+      />
 
       {/* Integrated Challenge, Vehicle & Customization Selection Trays */}
       {showSelectorsPanel && (

@@ -8,10 +8,16 @@ export {
 export { ChallengeScene } from './ChallengeScene';
 export type { ChallengeSceneProps } from './ChallengeScene';
 
-export { evaluateParking } from '../evaluation';
 export {
+  evaluateParking,
+  useCrashFeedbackLoop,
+} from '../evaluation';
+
+export {
+  AICoachControlsBar,
   ChallengeHUD,
   ChallengeSelector,
+  CrashFeedbackPanel,
   ResultsPanel,
 } from '../challenge-ui';
 
