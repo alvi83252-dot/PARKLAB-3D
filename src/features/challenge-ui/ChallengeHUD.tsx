@@ -33,6 +33,7 @@ import type {
   VehicleRuntimeState,
 } from '../challenges/types';
 import { CrashFeedbackPanel } from './CrashFeedbackPanel';
+import { MobileThumbstick } from './MobileThumbstick';
 import './challenge-ui.css';
 
 const DEFAULT_VEHICLE_DIMENSIONS: VehicleDimensions = {
@@ -99,6 +100,7 @@ export function ChallengeHUD({
   onStopCrashVoice,
 }: ChallengeHUDProps) {
   const [instructionsExpanded, setInstructionsExpanded] = useState(true);
+  const [forceTouchStick, setForceTouchStick] = useState(false);
 
   // Convert m/s to mph
   const rawMph = Math.abs(vehicleState.speedMps) * MPS_TO_MPH;
@@ -366,9 +368,19 @@ export function ChallengeHUD({
         )}
       </div>
 
-      {/* Bottom-Right: Driving Controls Reference */}
+      {/* Bottom-Right: Driving Controls Reference + Mobile Virtual Thumbstick */}
       <div className="pk-hud__panel pk-hud__controls">
-        <span className="pk-hud__label">Driving Controls</span>
+        <div className="pk-hud__instructions-header">
+          <span className="pk-hud__label">Driving Controls</span>
+          <button
+            type="button"
+            className="pk-hud__toggle-btn"
+            onClick={() => setForceTouchStick((prev) => !prev)}
+            title="Toggle virtual touch thumbstick"
+          >
+            {forceTouchStick ? 'Hide Stick' : 'Touch Stick'}
+          </button>
+        </div>
         <div className="pk-hud__controls-list">
           <div className="pk-hud__control-item">
             <span>Accelerate</span>
@@ -396,6 +408,9 @@ export function ChallengeHUD({
           </div>
         </div>
       </div>
+
+      {/* Mobile Virtual Thumbstick & Handbrake Dock (auto-visible on mobile/touch) */}
+      <MobileThumbstick forceVisible={forceTouchStick} />
     </aside>
   );
 }

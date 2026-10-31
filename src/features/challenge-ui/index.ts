@@ -18,3 +18,6 @@ export type {
 
 export { AttemptReplayModal } from './AttemptReplayModal';
 export type { AttemptReplayModalProps } from './AttemptReplayModal';
+
+export { MobileThumbstick } from './MobileThumbstick';
+export type { MobileThumbstickProps } from './MobileThumbstick';

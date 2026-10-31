@@ -1674,7 +1674,155 @@
 }
 
 /* ==========================================================================
-   6. RESPONSIVE BREAKPOINTS
+   6. MOBILE VIRTUAL THUMBSTICK & HANDBRAKE DOCK
+   ========================================================================== */
+
+.pk-thumbstick-dock {
+  position: absolute;
+  right: 1.15rem;
+  bottom: 1.15rem;
+  z-index: 12;
+  display: none;
+  align-items: flex-end;
+  gap: 0.85rem;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.pk-thumbstick-dock--force-visible {
+  display: flex;
+}
+
+.pk-thumbstick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(30, 41, 59, 0.72) 0%,
+    rgba(11, 14, 20, 0.88) 75%
+  );
+  border: 2px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65),
+    inset 0 0 18px rgba(56, 189, 248, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  cursor: grab;
+}
+
+.pk-thumbstick--active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.22),
+    0 12px 28px rgba(0, 0, 0, 0.75);
+  cursor: grabbing;
+}
+
+.pk-thumbstick__knob {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 35%,
+    #60a5fa 0%,
+    #2563eb 65%,
+    #1d4ed8 100%
+  );
+  border: 2px solid rgba(248, 250, 252, 0.85);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  transition: transform 35ms linear;
+}
+
+.pk-thumbstick--active .pk-thumbstick__knob {
+  transition: none;
+}
+
+.pk-thumbstick__dir {
+  position: absolute;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(148, 163, 184, 0.75);
+  pointer-events: none;
+}
+
+.pk-thumbstick__dir--up {
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pk-thumbstick__dir--down {
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pk-thumbstick__dir--left {
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pk-thumbstick__dir--right {
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pk-thumbstick-brake {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(239, 68, 68, 0.35),
+    rgba(15, 23, 42, 0.92)
+  );
+  border: 2px solid rgba(239, 68, 68, 0.65);
+  color: #fecaca;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.65);
+  touch-action: none;
+  cursor: pointer;
+}
+
+.pk-thumbstick-brake small {
+  font-size: 0.52rem;
+  opacity: 0.8;
+}
+
+.pk-thumbstick-brake--active {
+  background: rgba(239, 68, 68, 0.85);
+  color: #ffffff;
+  transform: scale(0.95);
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .pk-thumbstick-dock {
+    display: flex;
+  }
+
+  .pk-hud__controls {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   7. RESPONSIVE BREAKPOINTS
    ========================================================================== */
 
 @media (max-width: 900px) {
