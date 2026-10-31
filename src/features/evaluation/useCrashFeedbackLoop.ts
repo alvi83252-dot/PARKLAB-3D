@@ -560,13 +560,15 @@ export function useCrashFeedbackLoop({
         getChallengeAttemptHistory(challenge.id, latestStore).length + 1;
       resetActiveAttemptRefs(nextAttemptNum);
       setActiveCrashReport(null);
+      voiceCoach.stopSpeaking();
     },
-    [challenge.id, persistCurrentAttemptRecord, resetActiveAttemptRefs]
+    [challenge.id, persistCurrentAttemptRecord, resetActiveAttemptRefs, voiceCoach]
   );
 
   const dismissCrashReport = useCallback(() => {
     setActiveCrashReport(null);
-  }, []);
+    voiceCoach.stopSpeaking();
+  }, [voiceCoach]);
 
   const askCoach = useCallback(
     (

@@ -176,7 +176,7 @@ export function useChallengeSoundtrack(params: {
 
   const [musicEnabled, setMusicEnabledState] = useState<boolean>(true);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [musicVolume, setMusicVolumeState] = useState<number>(0.38);
+  const [musicVolume, setMusicVolumeState] = useState<number>(0.88);
 
   const activeTrack =
     CHALLENGE_SOUNDTRACKS[challengeId] ?? CHALLENGE_SOUNDTRACKS.parallel;
@@ -198,9 +198,18 @@ export function useChallengeSoundtrack(params: {
     if (!audioCtxRef.current) {
       try {
         const ctx = new AudioCtx();
+        const compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-14, ctx.currentTime);
+        compressor.knee.setValueAtTime(18, ctx.currentTime);
+        compressor.ratio.setValueAtTime(3.5, ctx.currentTime);
+        compressor.attack.setValueAtTime(0.005, ctx.currentTime);
+        compressor.release.setValueAtTime(0.18, ctx.currentTime);
+
         const masterGain = ctx.createGain();
-        masterGain.gain.value = musicVolumeRef.current * 0.32;
-        masterGain.connect(ctx.destination);
+        masterGain.gain.value = musicVolumeRef.current * 0.92;
+        masterGain.connect(compressor);
+        compressor.connect(ctx.destination);
+
         audioCtxRef.current = ctx;
         masterGainRef.current = masterGain;
       } catch {
@@ -215,7 +224,8 @@ export function useChallengeSoundtrack(params: {
     return audioCtxRef.current;
   }, []);
 
-  // Duck volume smoothly when AI Voice Coach speaks
+  // Keep full volume equal to AI voice (~90%) until AI Voice Coach speaks,
+  // then duck smoothly and restore immediately when AI voice finishes or is dismissed.
   useEffect(() => {
     const ctx = audioCtxRef.current;
     const masterGain = masterGainRef.current;
@@ -224,9 +234,11 @@ export function useChallengeSoundtrack(params: {
     }
     const targetGain = !musicEnabled
       ? 0.0001
-      : (isVoiceSpeaking ? musicVolume * 0.08 : musicVolume * 0.32);
+      : isVoiceSpeaking
+        ? musicVolume * 0.14
+        : musicVolume * 0.92;
     try {
-      masterGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.08);
+      masterGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.06);
     } catch {
       masterGain.gain.value = targetGain;
     }
@@ -295,9 +307,9 @@ export function useChallengeSoundtrack(params: {
           osc.detune.setValueAtTime((Math.random() - 0.5) * 8, now);
 
           gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(0.055, now + stepDurationSec * 1.4);
+          gain.gain.linearRampToValueAtTime(0.14, now + stepDurationSec * 1.4);
           gain.gain.exponentialRampToValueAtTime(
-            0.0008,
+            0.001,
             now + stepDurationSec * 7.8
           );
 
@@ -331,7 +343,7 @@ export function useChallengeSoundtrack(params: {
         );
 
         bassGain.gain.setValueAtTime(0.001, now);
-        bassGain.gain.linearRampToValueAtTime(0.14, now + 0.015);
+        bassGain.gain.linearRampToValueAtTime(0.32, now + 0.015);
         bassGain.gain.exponentialRampToValueAtTime(
           0.001,
           now + stepDurationSec * 1.75
@@ -356,9 +368,9 @@ export function useChallengeSoundtrack(params: {
         arpOsc.frequency.setValueAtTime(midiToFreq(arpNote), now);
 
         arpGain.gain.setValueAtTime(0.001, now);
-        arpGain.gain.linearRampToValueAtTime(0.065, now + 0.012);
+        arpGain.gain.linearRampToValueAtTime(0.16, now + 0.012);
         arpGain.gain.exponentialRampToValueAtTime(
-          0.0008,
+          0.001,
           now + stepDurationSec * 0.92
         );
 
