@@ -113,6 +113,8 @@ export const VEHICLES: VehicleDefinition[] = [
       steeringRate: 2.85,
     },
     bodyColor: '#dde2e9',
+    isFlyingVehicle: true,
+    maxFlightAltitudeMetres: 38,
   },
   {
     id: 'porsche-taycan',
@@ -288,7 +290,7 @@ export const VEHICLE_CHASSIS_SPECS: Record<VehicleCategory, VehicleChassisSpec> 
 const VEHICLE_SPECIFIC_OVERRIDES: Record<string, Partial<VehicleChassisSpec>> = {
   'tesla-roadster': {
     tagline:
-      'SpaceX Package electric hypercar — engage Cold-Gas 3D Flight Thrusters (Space / F) to soar through the sky or park on tarmac.',
+      'SpaceX Package electric hypercar — engage Cold-Gas 3D Flight Thrusters (Space to Fly Up / Ctrl to Descend) to soar through the sky or park on tarmac.',
     accentColor: '#ef4444',
     isFlyingVehicle: true,
     maxFlightAltitudeMetres: 38,

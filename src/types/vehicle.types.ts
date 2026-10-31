@@ -41,6 +41,7 @@ export interface VehicleDefinition {
   handling: VehicleHandling;
   bodyColor: string;
   isFlyingVehicle?: boolean;
+  maxFlightAltitudeMetres?: number;
 }
 
 export type VehicleDamageZone = 'front' | 'rear' | 'left' | 'right' | 'roof';

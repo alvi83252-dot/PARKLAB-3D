@@ -5,8 +5,6 @@ import {
   AlertOctagon,
   ArrowLeft,
   Car,
-  ChevronDown,
-  ChevronUp,
   Compass,
   Eye,
   EyeOff,
@@ -15,7 +13,6 @@ import {
   Pause,
   Play,
   RotateCcw,
-  SlidersHorizontal,
   Trophy,
   Wrench,
   X,
@@ -214,32 +211,83 @@ export function SimulationScreen({
   const [attemptResetKey, setAttemptResetKey] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isHudOpen, setIsHudOpen] = useState<boolean>(true);
-  const [isMobileView, setIsMobileView] = useState<boolean>(() =>
-    typeof window !== 'undefined'
-      ? window.innerWidth <= 820 || window.innerHeight <= 520
-      : false
-  );
-  const [isTopbarMinimized, setIsTopbarMinimized] = useState<boolean>(() =>
-    typeof window !== 'undefined'
-      ? window.innerWidth <= 820 || window.innerHeight <= 520
-      : false
-  );
   const [showCustomizationDrawer, setShowCustomizationDrawer] =
     useState<boolean>(false);
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
   const [totaledCountdown, setTotaledCountdown] = useState<number | null>(null);
 
+  const fullscreenRef = useRef<HTMLDivElement | null>(null);
+  const switcherRef = useRef<HTMLElement | null>(null);
+
+  // Compute uniform UI scale so when the desktop browser is placed on the side (split-screen)
+  // or resized smaller, every UI in the simulation scales down to fit the exact same full-screen resolution
+  const [uiScale, setUiScale] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    const screenW = window.screen?.availWidth || 1680;
+    const screenH = (window.screen?.availHeight || 960) - 100;
+    const refW = Math.max(1680, Math.min(1920, screenW));
+    const refH = Math.max(880, Math.min(1000, screenH));
+    return Math.max(
+      0.25,
+      Math.min(1, window.innerWidth / refW, window.innerHeight / refH)
+    );
+  });
+
   useEffect(() => {
-    const handleViewportResize = () => {
-      const mobile = window.innerWidth <= 820 || window.innerHeight <= 520;
-      setIsMobileView(mobile);
-      if (mobile) {
-        setIsTopbarMinimized(true);
-      }
+    const updateScale = () => {
+      const el = fullscreenRef.current;
+      const vw = el ? el.clientWidth || window.innerWidth : window.innerWidth;
+      const vh = el ? el.clientHeight || window.innerHeight : window.innerHeight;
+      const screenW = window.screen?.availWidth || 1680;
+      const screenH = (window.screen?.availHeight || 960) - 100;
+      const refW = Math.max(1680, Math.min(1920, screenW));
+      const refH = Math.max(880, Math.min(1000, screenH));
+      const nextScale = Math.max(0.25, Math.min(1, vw / refW, vh / refH));
+      setUiScale((prev) =>
+        Math.abs(prev - nextScale) > 0.002 ? nextScale : prev
+      );
     };
-    window.addEventListener('resize', handleViewportResize);
-    return () => window.removeEventListener('resize', handleViewportResize);
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && fullscreenRef.current) {
+      observer = new ResizeObserver(updateScale);
+      observer.observe(fullscreenRef.current);
+    }
+    return () => {
+      window.removeEventListener('resize', updateScale);
+      observer?.disconnect();
+    };
   }, []);
+
+  // Keep active challenge or location pill centered in the switcher without any visible scrollbar
+  useEffect(() => {
+    const navEl = switcherRef.current;
+    if (!navEl) return;
+    const activePill = navEl.querySelector<HTMLElement>(
+      '.sim-topbar__challenge-pill--active'
+    );
+    if (activePill && typeof activePill.scrollIntoView === 'function') {
+      activePill.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [simulationMode, selectedChallengeId, activeCity.id]);
+
+  const handleSwitcherWheel = useCallback(
+    (e: React.WheelEvent<HTMLElement>) => {
+      const el = e.currentTarget;
+      const delta =
+        Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (delta !== 0) {
+        el.scrollLeft += delta;
+      }
+    },
+    []
+  );
 
   const selectedVehicle = useMemo(
     () => getVehicleById(selectedVehicleId),
@@ -983,285 +1031,10 @@ export function SimulationScreen({
 
   return (
     <div
-      className={`sim-fullscreen ${
-        isTopbarMinimized
-          ? 'sim-fullscreen--topbar-minimized'
-          : 'sim-fullscreen--topbar-expanded'
-      }`}
+      ref={fullscreenRef}
+      className="sim-fullscreen"
       data-testid="simulation-screen"
     >
-      {/* Floating Top HUD Bar */}
-      <header
-        className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''} ${
-          isTopbarMinimized
-            ? 'sim-topbar--minimized'
-            : 'sim-topbar--expanded'
-        }`}
-        aria-label="Simulator Controls"
-      >
-        {/* Left: Pause + Brand + Mode Switcher (Challenges vs Free Roam) */}
-        <div className="sim-topbar__left">
-          <button
-            type="button"
-            className="sim-topbar__pause-btn"
-            onClick={() => {
-              clearVirtualDrivingInputs();
-              setIsPaused((prev) => !prev);
-            }}
-            aria-label={isPaused ? 'Resume Simulator' : 'Pause Simulator'}
-            title="Pause / Menu (Esc)"
-          >
-            {isPaused ? <Play size={16} /> : <Pause size={16} />}
-          </button>
-
-          <div className="sim-topbar__brand">
-            <span className="sim-topbar__brand-mark" aria-hidden="true" />
-            <span className="sim-topbar__brand-text">PARKLAB 3D</span>
-          </div>
-
-          {/* Mode Tabs: Challenges vs Free Roam (Real Earth) */}
-          <div
-            className="sim-topbar__mode-tabs"
-            role="tablist"
-            aria-label="Simulation Mode"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={simulationMode === 'challenges'}
-              className={`sim-topbar__mode-tab ${
-                simulationMode === 'challenges'
-                  ? 'sim-topbar__mode-tab--active-challenges'
-                  : ''
-              }`}
-              onClick={() => handleSelectMode('challenges')}
-            >
-              <Compass size={13} aria-hidden="true" />
-              <span>Challenges</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={simulationMode === 'freeroam'}
-              className={`sim-topbar__mode-tab ${
-                simulationMode === 'freeroam'
-                  ? 'sim-topbar__mode-tab--active-freeroam'
-                  : ''
-              }`}
-              onClick={() => handleSelectMode('freeroam')}
-            >
-              <Globe size={13} aria-hidden="true" />
-              <span>
-                Free Roam
-                <span className="sim-topbar__mode-sub"> · Real Earth</span>
-              </span>
-            </button>
-          </div>
-
-          {/* Mobile Top Bar Minimize / Expand Toggle */}
-          <button
-            type="button"
-            className="sim-topbar__mobile-toggle-btn"
-            onClick={() => setIsTopbarMinimized((prev) => !prev)}
-            aria-expanded={!isTopbarMinimized}
-            title={
-              isTopbarMinimized
-                ? 'Expand Top Bar Menu (Manoeuvres, Vehicles & AI Studio)'
-                : 'Minimize Top Bar Menu'
-            }
-            data-testid="topbar-mobile-toggle"
-          >
-            <SlidersHorizontal size={12} aria-hidden="true" />
-            <span>
-              {isTopbarMinimized
-                ? simulationMode === 'freeroam'
-                  ? activeCity.name.split(',')[0]
-                  : SHORT_CHALLENGE_LABELS[selectedChallengeId]
-                : 'Minimize'}
-            </span>
-            {isTopbarMinimized ? (
-              <ChevronDown size={12} aria-hidden="true" />
-            ) : (
-              <ChevronUp size={12} aria-hidden="true" />
-            )}
-          </button>
-        </div>
-
-        {/* Center: 5-Manoeuvre Switcher (Challenges Mode) OR Real-Earth City Switcher (Free Roam Mode) */}
-        {simulationMode === 'challenges' ? (
-          <nav
-            className="sim-topbar__switcher"
-            aria-label="In-Game Parking Manoeuvre Switcher"
-          >
-            {CHALLENGES.map((item, idx) => {
-              const isCurrent = item.id === selectedChallengeId;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`sim-topbar__challenge-pill ${
-                    isCurrent ? 'sim-topbar__challenge-pill--active' : ''
-                  }`}
-                  onClick={() => {
-                    handleSelectChallenge(item.id);
-                    if (isMobileView) {
-                      setIsTopbarMinimized(true);
-                    }
-                  }}
-                  aria-pressed={isCurrent}
-                  title={`${item.title} (${item.difficulty})`}
-                >
-                  <span className="sim-topbar__challenge-num">0{idx + 1}</span>
-                  <span>{SHORT_CHALLENGE_LABELS[item.id] ?? item.title}</span>
-                </button>
-              );
-            })}
-          </nav>
-        ) : (
-          <nav
-            className="sim-topbar__switcher"
-            aria-label="Real-Earth City Quick Switcher"
-          >
-            {REAL_CITIES_PRESETS.map((city) => {
-              const isCurrent = city.id === activeCity.id;
-              return (
-                <button
-                  key={city.id}
-                  type="button"
-                  className={`sim-topbar__challenge-pill ${
-                    isCurrent ? 'sim-topbar__challenge-pill--active' : ''
-                  }`}
-                  onClick={() => {
-                    handleSelectCity(city);
-                    if (isMobileView) {
-                      setIsTopbarMinimized(true);
-                    }
-                  }}
-                  aria-pressed={isCurrent}
-                  title={`${city.name} (${city.lat.toFixed(4)}, ${city.lng.toFixed(4)})`}
-                >
-                  <MapPin size={11} aria-hidden="true" />
-                  <span>{city.name}</span>
-                </button>
-              );
-            })}
-          </nav>
-        )}
-
-        {/* Right: HUD Toggle, Driver Rank/XP Leaderboard Button, Craft Lab & AI Coach, Vehicle Quick-Switcher, Guides Toggle, and Showcase Exit */}
-        <div className="sim-topbar__right">
-          <button
-            type="button"
-            className={`sim-topbar__tool-btn sim-topbar__hud-toggle-btn ${
-              !isHudOpen ? 'sim-topbar__tool-btn--active' : ''
-            }`}
-            onClick={() => setIsHudOpen((prev) => !prev)}
-            aria-pressed={!isHudOpen}
-            title={
-              isHudOpen
-                ? 'Close HUD overlay to clear the screen (Shortcut: H)'
-                : 'Open HUD overlay (Shortcut: H)'
-            }
-          >
-            {isHudOpen ? (
-              <EyeOff size={13} aria-hidden="true" />
-            ) : (
-              <Eye size={13} aria-hidden="true" />
-            )}
-            <span>{isHudOpen ? 'Hide HUD' : 'Show HUD'}</span>
-          </button>
-
-          <button
-            type="button"
-            className={`sim-topbar__tool-btn ${
-              isReplaying ? 'sim-topbar__tool-btn--active' : ''
-            }`}
-            onClick={isReplaying ? handleExitReplay : handleStartReplay}
-            title="Watch 3D Action Replay of your attempt"
-          >
-            <Play size={13} aria-hidden="true" />
-            <span>{isReplaying ? 'Exit Replay' : 'Replay'}</span>
-          </button>
-
-          <button
-            type="button"
-            className={`sim-topbar__tool-btn ${
-              showCustomizationDrawer ? 'sim-topbar__tool-btn--active' : ''
-            }`}
-            onClick={() => setShowCustomizationDrawer((prev) => !prev)}
-            title={`3D Car Craft (${skinSpec.badge} • ${themeSpec.badge}) & AI Voice/Webcam Coach`}
-          >
-            <Palette size={13} aria-hidden="true" />
-            <span>
-              {showCustomizationDrawer
-                ? 'Close Studio & AI'
-                : 'Craft Lab & AI Coach'}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className="sim-topbar__tool-btn sim-topbar__leaderboard-btn"
-            onClick={() => setIsLeaderboardOpen(true)}
-            title="Open Global Park Master Leaderboard & Driver XP Profile"
-          >
-            <Trophy size={13} aria-hidden="true" />
-            <span>
-              LV {driverProfile.level} · {driverProfile.totalPoints.toLocaleString()} PTS
-            </span>
-          </button>
-
-          <div className="sim-topbar__vehicle-select-wrap">
-            <Car size={14} className="sim-topbar__vehicle-icon" aria-hidden="true" />
-            <select
-              className="sim-topbar__vehicle-select"
-              value={selectedVehicleId}
-              onChange={(e) => handleSelectVehicle(e.target.value)}
-              aria-label="Select Active Vehicle"
-            >
-              {VEHICLES.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {simulationMode === 'challenges' && (
-            <button
-              type="button"
-              onClick={() => setShowGuides((prev) => !prev)}
-              className={`sim-topbar__tool-btn ${
-                showGuides ? 'sim-topbar__tool-btn--active' : ''
-              }`}
-              title="Toggle Bay Guides"
-            >
-              {showGuides ? (
-                <Eye size={14} aria-hidden="true" />
-              ) : (
-                <EyeOff size={14} aria-hidden="true" />
-              )}
-              <span>{showGuides ? 'Guides' : 'No Guides'}</span>
-            </button>
-          )}
-
-          {onExitToShowcase && (
-            <button
-              type="button"
-              onClick={() => {
-                clearVirtualDrivingInputs();
-                onExitToShowcase();
-              }}
-              className="sim-topbar__exit-btn"
-              title="Return to 3D Vehicle Showcase"
-            >
-              <ArrowLeft size={14} aria-hidden="true" />
-              <span>Showcase</span>
-            </button>
-          )}
-        </div>
-      </header>
-
       {/* Main Full-Screen 3D Simulation Viewport */}
       <div className="sim-viewport">
         {webglSupported ? (
@@ -1370,6 +1143,251 @@ export function SimulationScreen({
             </span>
           </div>
         )}
+      </div>
+
+      {/* Uniformly Scaled Full-Screen Resolution UI Layer */}
+      <div
+        className="sim-ui-scale-layer"
+        style={
+          uiScale < 0.999
+            ? {
+                width: `${(100 / uiScale).toFixed(4)}%`,
+                height: `${(100 / uiScale).toFixed(4)}%`,
+                transform: `scale(${uiScale.toFixed(4)})`,
+              }
+            : undefined
+        }
+      >
+        {/* Floating Top HUD Bar */}
+        <header
+          className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''}`}
+          aria-label="Simulator Controls"
+        >
+          {/* Left: Pause + Brand + Mode Switcher (Challenges vs Free Roam) */}
+          <div className="sim-topbar__left">
+            <button
+              type="button"
+              className="sim-topbar__pause-btn"
+              onClick={() => {
+                clearVirtualDrivingInputs();
+                setIsPaused((prev) => !prev);
+              }}
+              aria-label={isPaused ? 'Resume Simulator' : 'Pause Simulator'}
+              title="Pause / Menu (Esc)"
+            >
+              {isPaused ? <Play size={16} /> : <Pause size={16} />}
+            </button>
+
+            <div className="sim-topbar__brand">
+              <span className="sim-topbar__brand-mark" aria-hidden="true" />
+              <span className="sim-topbar__brand-text">PARKLAB 3D</span>
+            </div>
+
+            {/* Mode Tabs: Challenges vs Free Roam (Real Earth) */}
+            <div
+              className="sim-topbar__mode-tabs"
+              role="tablist"
+              aria-label="Simulation Mode"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={simulationMode === 'challenges'}
+                className={`sim-topbar__mode-tab ${
+                  simulationMode === 'challenges'
+                    ? 'sim-topbar__mode-tab--active-challenges'
+                    : ''
+                }`}
+                onClick={() => handleSelectMode('challenges')}
+              >
+                <Compass size={13} aria-hidden="true" />
+                <span>Challenges</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={simulationMode === 'freeroam'}
+                className={`sim-topbar__mode-tab ${
+                  simulationMode === 'freeroam'
+                    ? 'sim-topbar__mode-tab--active-freeroam'
+                    : ''
+                }`}
+                onClick={() => handleSelectMode('freeroam')}
+              >
+                <Globe size={13} aria-hidden="true" />
+                <span>Free Roam · Real Earth</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Center: 5-Manoeuvre Switcher (Challenges Mode) OR Real-Earth City Switcher (Free Roam Mode) */}
+          {simulationMode === 'challenges' ? (
+            <nav
+              ref={switcherRef}
+              className="sim-topbar__switcher"
+              aria-label="In-Game Parking Manoeuvre Switcher"
+              onWheel={handleSwitcherWheel}
+            >
+              {CHALLENGES.map((item, idx) => {
+                const isCurrent = item.id === selectedChallengeId;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`sim-topbar__challenge-pill ${
+                      isCurrent ? 'sim-topbar__challenge-pill--active' : ''
+                    }`}
+                    onClick={() => handleSelectChallenge(item.id)}
+                    aria-pressed={isCurrent}
+                    title={`${item.title} (${item.difficulty})`}
+                  >
+                    <span className="sim-topbar__challenge-num">0{idx + 1}</span>
+                    <span>{SHORT_CHALLENGE_LABELS[item.id] ?? item.title}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          ) : (
+            <nav
+              ref={switcherRef}
+              className="sim-topbar__switcher"
+              aria-label="Real-Earth City Quick Switcher"
+              onWheel={handleSwitcherWheel}
+            >
+              {REAL_CITIES_PRESETS.map((city) => {
+                const isCurrent = city.id === activeCity.id;
+                return (
+                  <button
+                    key={city.id}
+                    type="button"
+                    className={`sim-topbar__challenge-pill ${
+                      isCurrent ? 'sim-topbar__challenge-pill--active' : ''
+                    }`}
+                    onClick={() => handleSelectCity(city)}
+                    aria-pressed={isCurrent}
+                    title={`${city.name} (${city.lat.toFixed(4)}, ${city.lng.toFixed(4)})`}
+                  >
+                    <MapPin size={11} aria-hidden="true" />
+                    <span>{city.name}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          )}
+
+          {/* Right: HUD Toggle, Driver Rank/XP Leaderboard Button, Craft Lab & AI Coach, Vehicle Quick-Switcher, Guides Toggle, and Showcase Exit */}
+          <div className="sim-topbar__right">
+            <button
+              type="button"
+              className={`sim-topbar__tool-btn sim-topbar__hud-toggle-btn ${
+                !isHudOpen ? 'sim-topbar__tool-btn--active' : ''
+              }`}
+              onClick={() => setIsHudOpen((prev) => !prev)}
+              aria-pressed={!isHudOpen}
+              title={
+                isHudOpen
+                  ? 'Close HUD overlay to clear the screen (Shortcut: H)'
+                  : 'Open HUD overlay (Shortcut: H)'
+              }
+            >
+              {isHudOpen ? (
+                <EyeOff size={13} aria-hidden="true" />
+              ) : (
+                <Eye size={13} aria-hidden="true" />
+              )}
+              <span>{isHudOpen ? 'Hide HUD' : 'Show HUD'}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`sim-topbar__tool-btn ${
+                isReplaying ? 'sim-topbar__tool-btn--active' : ''
+              }`}
+              onClick={isReplaying ? handleExitReplay : handleStartReplay}
+              title="Watch 3D Action Replay of your attempt"
+            >
+              <Play size={13} aria-hidden="true" />
+              <span>{isReplaying ? 'Exit Replay' : 'Replay'}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`sim-topbar__tool-btn ${
+                showCustomizationDrawer ? 'sim-topbar__tool-btn--active' : ''
+              }`}
+              onClick={() => setShowCustomizationDrawer((prev) => !prev)}
+              title={`3D Car Craft (${skinSpec.badge} • ${themeSpec.badge}) & AI Voice/Webcam Coach`}
+            >
+              <Palette size={13} aria-hidden="true" />
+              <span>
+                {showCustomizationDrawer
+                  ? 'Close Studio & AI'
+                  : 'Craft Lab & AI Coach'}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className="sim-topbar__tool-btn sim-topbar__leaderboard-btn"
+              onClick={() => setIsLeaderboardOpen(true)}
+              title="Open Global Park Master Leaderboard & Driver XP Profile"
+            >
+              <Trophy size={13} aria-hidden="true" />
+              <span>
+                LV {driverProfile.level} · {driverProfile.totalPoints.toLocaleString()} PTS
+              </span>
+            </button>
+
+            <div className="sim-topbar__vehicle-select-wrap">
+              <Car size={14} className="sim-topbar__vehicle-icon" aria-hidden="true" />
+              <select
+                className="sim-topbar__vehicle-select"
+                value={selectedVehicleId}
+                onChange={(e) => handleSelectVehicle(e.target.value)}
+                aria-label="Select Active Vehicle"
+              >
+                {VEHICLES.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {simulationMode === 'challenges' && (
+              <button
+                type="button"
+                onClick={() => setShowGuides((prev) => !prev)}
+                className={`sim-topbar__tool-btn ${
+                  showGuides ? 'sim-topbar__tool-btn--active' : ''
+                }`}
+                title="Toggle Bay Guides"
+              >
+                {showGuides ? (
+                  <Eye size={14} aria-hidden="true" />
+                ) : (
+                  <EyeOff size={14} aria-hidden="true" />
+                )}
+                <span>{showGuides ? 'Guides' : 'No Guides'}</span>
+              </button>
+            )}
+
+            {onExitToShowcase && (
+              <button
+                type="button"
+                onClick={() => {
+                  clearVirtualDrivingInputs();
+                  onExitToShowcase();
+                }}
+                className="sim-topbar__exit-btn"
+                title="Return to 3D Vehicle Showcase"
+              >
+                <ArrowLeft size={14} aria-hidden="true" />
+                <span>Showcase</span>
+              </button>
+            )}
+          </div>
+        </header>
 
         {/* Live Gameplay Cockpit HUD Overlay OR Completed-Challenge Replay Overlay */}
         <div className="sim-hud-layer">
@@ -1439,7 +1457,7 @@ export function SimulationScreen({
           >
             <div
               className="sim-leaderboard-modal"
-              style={{ maxWidth: '940px', maxHeight: '88vh', overflowY: 'auto' }}
+              style={{ maxWidth: '940px', maxHeight: '88%', overflowY: 'auto' }}
             >
               <div className="sim-leaderboard-modal__header">
                 <div>
@@ -1739,7 +1757,7 @@ export function SimulationScreen({
                   REAL-EARTH FREE ROAM CITIES
                 </span>
                 <div className="sim-pause-card__grid">
-                  {REAL_CITIES_PRESETS.slice(0, 6).map((city) => (
+                  {REAL_CITIES_PRESETS.map((city) => (
                     <button
                       key={city.id}
                       type="button"

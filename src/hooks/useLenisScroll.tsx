@@ -168,7 +168,7 @@ export function LenisProvider({ children, lerp = 0.085 }: LenisProviderProps) {
       // Do not hijack form controls, explicit no-drag elements, or 3D WebGL canvases
       if (
         target.closest(
-          'input, textarea, select, [contenteditable="true"], [data-no-drag-scroll], canvas:not(.gameplay-stage__canvas)'
+          '.sim-fullscreen, input, textarea, select, [contenteditable="true"], [data-no-drag-scroll], canvas:not(.gameplay-stage__canvas)'
         )
       ) {
         return true;

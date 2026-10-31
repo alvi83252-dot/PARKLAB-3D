@@ -131,14 +131,19 @@ export function stepDrivingPhysics(
     let vy = state.verticalVelocityY;
     const currentAlt = state.position[1];
 
-    if (activeInput.ascend && !activeInput.descend) {
+    if (activeInput.descend && !activeInput.ascend) {
+      const descendAccel = 18.0;
+      // Soft retro-thruster cushion near ground (Y < 1.2m) for smooth bay landings
+      const maxSinkRate =
+        currentAlt < 1.2 ? Math.max(2.6, currentAlt * 4.5) : 12.0;
+      vy = Math.max(-maxSinkRate, vy - descendAccel * dt);
+    } else if (activeInput.ascend && !activeInput.descend) {
       const climbAccel = 16.5 * enginePowerMultiplier;
       vy = Math.min(11.5, vy + climbAccel * dt);
-    } else if (activeInput.descend && !activeInput.ascend) {
-      const descendAccel = 15.0;
-      // Soft retro-thruster cushion near ground (Y < 1.5m) for smooth bay landings
-      const maxSinkRate = currentAlt < 1.5 ? Math.max(1.8, currentAlt * 3.8) : 10.5;
-      vy = Math.max(-maxSinkRate, vy - descendAccel * dt);
+    } else if (activeInput.descend && activeInput.ascend) {
+      // If both are held simultaneously, prioritize descending back toward ground
+      const descendAccel = 16.0;
+      vy = Math.max(-9.5, vy - descendAccel * dt);
     } else {
       // Active altitude-hold thrusters stabilize vertical velocity in mid-air
       vy = moveTowards(vy, 0, 24.0 * dt);

@@ -130,6 +130,8 @@ export function VehicleController({
   const lastReportTimeRef = useRef<number>(-1);
   const lastReportedMovingRef = useRef<boolean>(false);
   const lastReportedSteerRef = useRef<number>(0);
+  const lastReportedAltitudeRef = useRef<number>(initialPosition[1]);
+  const lastReportedAirborneRef = useRef<boolean>(false);
 
   // Keep latest callbacks & obstacles in refs so useFrame never uses stale closures
   const onStateChangeRef = useRef(onStateChange);
@@ -169,6 +171,8 @@ export function VehicleController({
     lastReportTimeRef.current = -1;
     lastReportedMovingRef.current = false;
     lastReportedSteerRef.current = 0;
+    lastReportedAltitudeRef.current = spawnY;
+    lastReportedAirborneRef.current = spawnY > 0.18;
 
     if (rootGroupRef.current) {
       rootGroupRef.current.position.set(spawnX, spawnY, spawnZ);
@@ -188,6 +192,7 @@ export function VehicleController({
       isMoving: false,
       isBraking: false,
       isReversing: false,
+      isAirborne: spawnY > 0.18,
       damage: cloneDamageStateSnapshot(freshDamage),
     });
   }, [spawnX, spawnY, spawnZ, initialRotationY, vehicle.id, resetKey, resetTrigger]);
@@ -432,6 +437,9 @@ export function VehicleController({
       Math.abs(physics.lateralVelocityX) > MOVING_SPEED_THRESHOLD_MPS ||
       Math.abs(physics.lateralVelocityZ) > MOVING_SPEED_THRESHOLD_MPS;
     const movingChanged = isMoving !== lastReportedMovingRef.current;
+    const airborneChanged = physics.isAirborne !== lastReportedAirborneRef.current;
+    const altitudeChanged =
+      Math.abs(physics.position[1] - lastReportedAltitudeRef.current) > 0.015;
     const steerChanged =
       Math.abs(physics.steeringAngle - lastReportedSteerRef.current) > 0.008;
     const throttleElapsed =
@@ -440,11 +448,14 @@ export function VehicleController({
     if (
       outcome.newCollisionsCounted > 0 ||
       movingChanged ||
-      ((isMoving || steerChanged) && throttleElapsed)
+      airborneChanged ||
+      ((isMoving || steerChanged || altitudeChanged) && throttleElapsed)
     ) {
       lastReportTimeRef.current = elapsed;
       lastReportedMovingRef.current = isMoving;
       lastReportedSteerRef.current = physics.steeringAngle;
+      lastReportedAltitudeRef.current = physics.position[1];
+      lastReportedAirborneRef.current = physics.isAirborne;
 
       onStateChangeRef.current?.({
         position: [
@@ -459,6 +470,7 @@ export function VehicleController({
         isMoving,
         isBraking: physics.isBraking,
         isReversing: physics.isReversing,
+        isAirborne: physics.isAirborne,
         damage: cloneDamageStateSnapshot(damage),
       });
     }

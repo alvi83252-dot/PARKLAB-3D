@@ -183,9 +183,6 @@ export function ChallengeHUD({
   onStopCrashVoice,
   webcamObserver,
 }: ChallengeHUDProps) {
-  const isMobileViewport =
-    typeof window !== 'undefined' && window.innerWidth <= 768;
-
   const [internalHudOpen, setInternalHudOpen] = useState(true);
   const isHudOpen =
     controlledHudOpen !== undefined ? controlledHudOpen : internalHudOpen;
@@ -199,12 +196,8 @@ export function ChallengeHUD({
   };
 
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
-  const [missionCollapsed, setMissionCollapsed] = useState<boolean>(
-    () => isMobileViewport
-  );
-  const [telemetryCollapsed, setTelemetryCollapsed] = useState<boolean>(
-    () => isMobileViewport
-  );
+  const [missionCollapsed, setMissionCollapsed] = useState<boolean>(false);
+  const [telemetryCollapsed, setTelemetryCollapsed] = useState<boolean>(false);
   const [activeTouchSteer, setActiveTouchSteer] = useState<'left' | 'right' | null>(null);
   const [activeTouchPedal, setActiveTouchPedal] = useState<'accel' | 'brake' | null>(null);
   const [activeFlightBtn, setActiveFlightBtn] = useState<'ascend' | 'descend' | null>(null);
@@ -212,7 +205,11 @@ export function ChallengeHUD({
   const { effectivePhysics } = useCustomization();
 
   const profile = propDriverProfile ?? loadDriverProfile();
-  const isFlyingCapable = Boolean(vehicle?.isFlyingVehicle);
+  const isFlyingCapable = Boolean(
+    vehicle?.isFlyingVehicle ||
+      vehicle?.id === 'tesla-roadster' ||
+      vehicle?.category === 'electric-roadster'
+  );
   const altitudeMeters = Math.max(0, vehicleState.position[1]);
   const isAirborne = Boolean(vehicleState.isAirborne) || altitudeMeters > 0.22;
 
@@ -405,8 +402,8 @@ export function ChallengeHUD({
           )}
         </button>
 
-        {/* Compact Mini Telemetry Pill when HUD is Closed (or on Mobile when Telemetry Drawer is Collapsed) */}
-        {(!isHudOpen || telemetryCollapsed) && (
+        {/* Compact Mini Telemetry Pill when HUD is Closed */}
+        {!isHudOpen && (
           <div className="pk-hud__mini-status-pill">
             <span className="pk-hud__mini-speed">{displayMph} MPH</span>
             <span className="pk-hud__mini-gear">{gearSlot}</span>
@@ -421,13 +418,24 @@ export function ChallengeHUD({
         )}
       </div>
 
-      {/* Mobile Compact Drawer Tabs (Pushes Mission/Instructions & Telemetry into edge drawers on mobile) */}
+      {/* Mobile Compact Drawer Tabs (Minimizes Mission/Instructions & Telemetry into a single compact row on mobile) */}
       {isHudOpen && (
         <div
           className="pk-hud__mobile-drawer-bar"
           role="toolbar"
           aria-label="Mobile HUD Drawers"
         >
+          <button
+            type="button"
+            className="pk-hud__drawer-tab pk-hud__drawer-tab--hud-min"
+            onClick={handleToggleHud}
+            title="Minimize HUD overlay"
+            data-testid="mobile-hud-minimize-btn"
+          >
+            <EyeOff size={11} aria-hidden="true" />
+            <span>Min HUD</span>
+          </button>
+
           <button
             type="button"
             className={`pk-hud__drawer-tab ${
@@ -443,24 +451,35 @@ export function ChallengeHUD({
                 return next;
               });
             }}
+            aria-expanded={!missionCollapsed}
+            data-testid="mobile-mission-drawer-tab"
           >
             {simulationMode === 'freeroam' ? (
               <>
-                <Globe size={12} aria-hidden="true" />
+                <Globe size={11} aria-hidden="true" />
                 <span>
                   {missionCollapsed
-                    ? `GPS: ${activeCity?.name ?? 'City'}`
-                    : 'Hide GPS'}
+                    ? `GPS: ${activeCity?.name.split(',')[0] ?? 'City'}`
+                    : 'Minimize GPS'}
                 </span>
+                {missionCollapsed ? (
+                  <ChevronDown size={11} aria-hidden="true" />
+                ) : (
+                  <ChevronUp size={11} aria-hidden="true" />
+                )}
               </>
             ) : (
               <>
-                <ChevronDown size={12} aria-hidden="true" />
                 <span>
                   {missionCollapsed
-                    ? `Instructions (${progressPercent}%)`
-                    : 'Hide Instructions'}
+                    ? `${challenge.title} · ${progressPercent}%`
+                    : 'Minimize Mission'}
                 </span>
+                {missionCollapsed ? (
+                  <ChevronDown size={11} aria-hidden="true" />
+                ) : (
+                  <ChevronUp size={11} aria-hidden="true" />
+                )}
               </>
             )}
           </button>
@@ -479,13 +498,20 @@ export function ChallengeHUD({
                 return next;
               });
             }}
+            aria-expanded={!telemetryCollapsed}
+            data-testid="mobile-telemetry-drawer-tab"
           >
-            <ShieldAlert size={12} aria-hidden="true" />
+            <ShieldAlert size={11} aria-hidden="true" />
             <span>
               {telemetryCollapsed
-                ? `Health ${carHealth}% · ${displayMph} MPH`
-                : 'Hide Telemetry'}
+                ? `${displayMph} MPH · ${gearSlot} · HP ${carHealth}%`
+                : 'Minimize Stats'}
             </span>
+            {telemetryCollapsed ? (
+              <ChevronDown size={11} aria-hidden="true" />
+            ) : (
+              <ChevronUp size={11} aria-hidden="true" />
+            )}
           </button>
 
           {onOpenCustomizer && (
@@ -493,9 +519,10 @@ export function ChallengeHUD({
               type="button"
               className="pk-hud__drawer-tab"
               onClick={onOpenCustomizer}
+              title="Open 3D Car Craft Studio & AI Coach"
             >
-              <Sparkles size={12} aria-hidden="true" />
-              <span>Custom Car ({effectivePhysics.skin.badge})</span>
+              <Sparkles size={11} aria-hidden="true" />
+              <span>Studio</span>
             </button>
           )}
         </div>
@@ -505,10 +532,38 @@ export function ChallengeHUD({
       {isHudOpen &&
         (simulationMode === 'freeroam' && activeCity && onSelectCity ? (
           <div
-            className={`pk-hud__mission-freeroam ${
+            className={`pk-hud__panel pk-hud__mission-freeroam ${
               missionCollapsed ? 'pk-hud__panel--collapsed' : ''
             }`}
           >
+            <div className="pk-hud__mission-top">
+              <span className="pk-hud__label">
+                REAL-EARTH GPS · {activeCity.name.toUpperCase()}
+              </span>
+              <button
+                type="button"
+                className="pk-hud__collapse-icon-btn"
+                onClick={() => setMissionCollapsed((prev) => !prev)}
+                aria-expanded={!missionCollapsed}
+                title={
+                  missionCollapsed
+                    ? 'Expand City & GPS Search Panel'
+                    : 'Minimize City & GPS Search Panel'
+                }
+              >
+                {missionCollapsed ? (
+                  <>
+                    <span>Expand</span>
+                    <ChevronDown size={12} aria-hidden="true" />
+                  </>
+                ) : (
+                  <>
+                    <span>Minimize</span>
+                    <ChevronUp size={12} aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            </div>
             {!missionCollapsed && (
               <CitySearchPanel
                 activeCity={activeCity}
@@ -544,13 +599,20 @@ export function ChallengeHUD({
                   title={
                     missionCollapsed
                       ? 'Expand Mission & Instructions'
-                      : 'Collapse Mission & Instructions'
+                      : 'Minimize Mission & Instructions'
                   }
+                  data-testid="mission-collapse-btn"
                 >
                   {missionCollapsed ? (
-                    <ChevronDown size={13} aria-hidden="true" />
+                    <>
+                      <span>Expand</span>
+                      <ChevronDown size={12} aria-hidden="true" />
+                    </>
                   ) : (
-                    <ChevronUp size={13} aria-hidden="true" />
+                    <>
+                      <span>Minimize</span>
+                      <ChevronUp size={12} aria-hidden="true" />
+                    </>
                   )}
                 </button>
               </div>
@@ -694,18 +756,19 @@ export function ChallengeHUD({
               title={
                 telemetryCollapsed
                   ? 'Expand Telemetry & Car Health Schematic'
-                  : 'Collapse Telemetry Panel'
+                  : 'Minimize Telemetry Panel'
               }
+              data-testid="telemetry-collapse-btn"
             >
               {telemetryCollapsed ? (
                 <>
-                  <span>Details</span>
-                  <ChevronDown size={13} aria-hidden="true" />
+                  <span>Expand</span>
+                  <ChevronDown size={12} aria-hidden="true" />
                 </>
               ) : (
                 <>
-                  <span>Compact</span>
-                  <ChevronUp size={13} aria-hidden="true" />
+                  <span>Minimize</span>
+                  <ChevronUp size={12} aria-hidden="true" />
                 </>
               )}
             </button>
@@ -1066,7 +1129,7 @@ export function ChallengeHUD({
           )}
 
           {/* SpaceX Cold-Gas 3D Flight Telemetry & Thruster Controls (Tesla Roadster) */}
-          {isFlyingCapable && (
+          {isFlyingCapable && !telemetryCollapsed && (
             <div
               className={`pk-hud__flight-card ${
                 isAirborne ? 'pk-hud__flight-card--airborne' : ''
@@ -1123,7 +1186,7 @@ export function ChallengeHUD({
                     setVirtualDrivingInput('descend', false);
                   }}
                 >
-                  ▼ DESCEND <kbd>SHIFT / F</kbd>
+                  ▼ DESCEND <kbd>CTRL / SHIFT / F</kbd>
                 </button>
               </div>
             </div>
@@ -1347,7 +1410,7 @@ export function ChallengeHUD({
         <span className="pk-hud__control-caption">
           {isFlyingCapable ? (
             <>
-              FLY: <kbd>SPACE</kbd> / <kbd>SHIFT</kbd> · BRAKE: <kbd>B</kbd> · CAM:{' '}
+              FLY UP: <kbd>SPACE</kbd> · DOWN: <kbd>CTRL</kbd> · BRAKE: <kbd>B</kbd> · CAM:{' '}
               <kbd>C</kbd>
             </>
           ) : (

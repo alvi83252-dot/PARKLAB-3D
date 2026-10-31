@@ -3,7 +3,7 @@
  * High-frequency ref-based listener for:
  * - W/A/S/D and Arrow keys (throttle, brake/reverse, steering/yaw)
  * - Space / Q / PageUp (Ascend / Vertical Thrusters on Roadster, Handbrake on ground cars)
- * - Shift / F / PageDown (Descend / Land Thrusters on Roadster)
+ * - Ctrl / Shift / F / PageDown (Descend / Land Thrusters on Roadster)
  * - B (Dedicated Handbrake)
  * - On-screen HUD touch/pointer driving & flight controls.
  */
@@ -117,11 +117,17 @@ function mapKeyEventToActions(event: KeyboardEvent): DrivingAction[] {
     return ['ascend'];
   }
   if (
+    code === 'ControlLeft' ||
+    code === 'ControlRight' ||
     code === 'ShiftLeft' ||
     code === 'ShiftRight' ||
     code === 'KeyF' ||
+    code === 'KeyZ' ||
     code === 'PageDown' ||
+    key === 'control' ||
+    key === 'ctrl' ||
     key === 'f' ||
+    key === 'z' ||
     key === 'shift'
   ) {
     return ['descend'];
@@ -210,14 +216,20 @@ export function useKeyboardControls(
         return;
       }
 
-      // Prevent default browser scrolling on Arrow keys, Space, PageUp/PageDown while driving/flying
+      // Prevent default browser scrolling or Ctrl+Key browser shortcuts while driving/flying
       if (
         event.code === 'Space' ||
+        event.code === 'ControlLeft' ||
+        event.code === 'ControlRight' ||
+        event.code === 'ShiftLeft' ||
+        event.code === 'ShiftRight' ||
         event.code.startsWith('Arrow') ||
         event.code === 'PageUp' ||
         event.code === 'PageDown' ||
         event.key === ' ' ||
-        event.key.startsWith('Arrow')
+        event.key === 'Control' ||
+        event.key.startsWith('Arrow') ||
+        event.ctrlKey
       ) {
         event.preventDefault();
       }

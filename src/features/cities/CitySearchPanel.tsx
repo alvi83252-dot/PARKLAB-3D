@@ -420,8 +420,17 @@ export const CitySearchPanel: React.FC<CitySearchPanelProps> = ({
         </div>
 
         {/* Quick Preset City Pills (Manual Selection: Central London, Harrow UK, etc.) */}
-        <div className="freeroam-quick-cities">
-          {REAL_CITIES_PRESETS.slice(0, 5).map((preset) => {
+        <div
+          className="freeroam-quick-cities"
+          onWheel={(e) => {
+            const delta =
+              Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+            if (delta !== 0) {
+              e.currentTarget.scrollLeft += delta;
+            }
+          }}
+        >
+          {REAL_CITIES_PRESETS.map((preset) => {
             const active = activeCity.id === preset.id;
             return (
               <button
@@ -437,14 +446,14 @@ export const CitySearchPanel: React.FC<CitySearchPanelProps> = ({
               </button>
             );
           })}
-          <button
-            type="button"
-            className="freeroam-open-search-btn"
-            onClick={() => setIsSearchOpen((prev) => !prev)}
-          >
-            {isSearchOpen ? 'Close Search' : 'Search Address / GPS'}
-          </button>
         </div>
+        <button
+          type="button"
+          className="freeroam-open-search-btn"
+          onClick={() => setIsSearchOpen((prev) => !prev)}
+        >
+          {isSearchOpen ? 'Close Search' : 'Search Any Global Address / GPS'}
+        </button>
 
         {/* Optional Emotion Camera City Selector (Webcam Facial Cue -> City or Manual) */}
         {observer.cameraSupported && (
@@ -601,6 +610,13 @@ export const CitySearchPanel: React.FC<CitySearchPanelProps> = ({
           className="freeroam-quick-cities"
           style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(148, 163, 184, 0.14)' }}
           aria-label="Mapbox 3D Ground Layer Style"
+          onWheel={(e) => {
+            const delta =
+              Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+            if (delta !== 0) {
+              e.currentTarget.scrollLeft += delta;
+            }
+          }}
         >
           {MAPBOX_STYLE_OPTIONS.map((opt) => {
             const active = mapboxStyle === opt.id;
