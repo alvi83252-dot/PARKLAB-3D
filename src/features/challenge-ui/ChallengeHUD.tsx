@@ -22,8 +22,6 @@ import {
   Flag,
   Flame,
   Globe,
-  Maximize2,
-  Minimize2,
   Rocket,
   RotateCcw,
   ShieldAlert,
@@ -381,7 +379,9 @@ export function ChallengeHUD({
         <button
           type="button"
           className={`pk-hud__master-toggle-btn ${
-            !isHudOpen ? 'pk-hud__master-toggle-btn--closed' : ''
+            !isHudOpen
+              ? 'pk-hud__master-toggle-btn--closed'
+              : 'pk-hud__master-toggle-btn--open'
           }`}
           onClick={handleToggleHud}
           title={
@@ -405,13 +405,15 @@ export function ChallengeHUD({
           )}
         </button>
 
-        {/* Compact Mini Telemetry Pill when HUD is Closed so Speed & Health are still visible */}
-        {!isHudOpen && (
+        {/* Compact Mini Telemetry Pill when HUD is Closed (or on Mobile when Telemetry Drawer is Collapsed) */}
+        {(!isHudOpen || telemetryCollapsed) && (
           <div className="pk-hud__mini-status-pill">
             <span className="pk-hud__mini-speed">{displayMph} MPH</span>
             <span className="pk-hud__mini-gear">{gearSlot}</span>
             <span
-              className={`pk-hud__mini-health pk-hud__mini-health--${healthModifier}`}
+              className={`pk-hud__mini-health ${
+                carHealth <= 30 ? 'pk-hud__mini-health--critical' : ''
+              }`}
             >
               HP {carHealth}%
             </span>
@@ -419,41 +421,94 @@ export function ChallengeHUD({
         )}
       </div>
 
+      {/* Mobile Compact Drawer Tabs (Pushes Mission/Instructions & Telemetry into edge drawers on mobile) */}
+      {isHudOpen && (
+        <div
+          className="pk-hud__mobile-drawer-bar"
+          role="toolbar"
+          aria-label="Mobile HUD Drawers"
+        >
+          <button
+            type="button"
+            className={`pk-hud__drawer-tab ${
+              !missionCollapsed ? 'pk-hud__drawer-tab--active' : ''
+            }`}
+            onClick={() => {
+              setMissionCollapsed((prev) => {
+                const next = !prev;
+                if (!next) {
+                  setTelemetryCollapsed(true);
+                  setInstructionsExpanded(true);
+                }
+                return next;
+              });
+            }}
+          >
+            {simulationMode === 'freeroam' ? (
+              <>
+                <Globe size={12} aria-hidden="true" />
+                <span>
+                  {missionCollapsed
+                    ? `GPS: ${activeCity?.name ?? 'City'}`
+                    : 'Hide GPS'}
+                </span>
+              </>
+            ) : (
+              <>
+                <ChevronDown size={12} aria-hidden="true" />
+                <span>
+                  {missionCollapsed
+                    ? `Instructions (${progressPercent}%)`
+                    : 'Hide Instructions'}
+                </span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className={`pk-hud__drawer-tab ${
+              !telemetryCollapsed ? 'pk-hud__drawer-tab--active' : ''
+            }`}
+            onClick={() => {
+              setTelemetryCollapsed((prev) => {
+                const next = !prev;
+                if (!next) {
+                  setMissionCollapsed(true);
+                }
+                return next;
+              });
+            }}
+          >
+            <ShieldAlert size={12} aria-hidden="true" />
+            <span>
+              {telemetryCollapsed
+                ? `Health ${carHealth}% · ${displayMph} MPH`
+                : 'Hide Telemetry'}
+            </span>
+          </button>
+
+          {onOpenCustomizer && (
+            <button
+              type="button"
+              className="pk-hud__drawer-tab"
+              onClick={onOpenCustomizer}
+            >
+              <Sparkles size={12} aria-hidden="true" />
+              <span>Custom Car ({effectivePhysics.skin.badge})</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Top-Left: Free Roam Real-Earth City Search OR Active Challenge Manoeuvre Panel */}
       {isHudOpen &&
         (simulationMode === 'freeroam' && activeCity && onSelectCity ? (
           <div
             className={`pk-hud__mission-freeroam ${
-              missionCollapsed ? 'pk-hud__mission-freeroam--collapsed' : ''
+              missionCollapsed ? 'pk-hud__panel--collapsed' : ''
             }`}
           >
-            <div className="pk-hud__mobile-drawer-bar">
-              <span className="pk-hud__label">
-                REAL-EARTH GPS · {activeCity.name.toUpperCase()}
-              </span>
-              <button
-                type="button"
-                className="pk-hud__collapse-icon-btn"
-                onClick={() => setMissionCollapsed((prev) => !prev)}
-                title={
-                  missionCollapsed
-                    ? 'Expand City & GPS Search Panel'
-                    : 'Minimize City & GPS Search Panel'
-                }
-              >
-                {missionCollapsed ? (
-                  <>
-                    <Maximize2 size={12} aria-hidden="true" />
-                    <span>Expand GPS</span>
-                  </>
-                ) : (
-                  <>
-                    <Minimize2 size={12} aria-hidden="true" />
-                    <span>Minimize</span>
-                  </>
-                )}
-              </button>
-            </div>
             {!missionCollapsed && (
               <CitySearchPanel
                 activeCity={activeCity}
