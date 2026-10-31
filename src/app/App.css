@@ -1716,3 +1716,150 @@
   flex-wrap: wrap;
   width: 100%;
 }
+
+@media (max-width: 1080px) {
+  .sim-topbar__challenge-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 820px), (max-height: 520px) {
+  .sim-topbar {
+    flex-wrap: wrap;
+    top: 0.28rem;
+    left: 0.4rem;
+    right: 0.4rem;
+    padding: 0.24rem 0.4rem;
+    gap: 0.28rem;
+    border-radius: 11px;
+  }
+
+  .sim-topbar__brand,
+  .sim-topbar__mode-sub {
+    display: none;
+  }
+
+  .sim-topbar__left {
+    width: 100%;
+    gap: 0.28rem;
+    justify-content: flex-start;
+  }
+
+  .sim-topbar__pause-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 7px;
+    flex-shrink: 0;
+  }
+
+  .sim-topbar__mode-tabs {
+    padding: 0.12rem;
+    gap: 0.14rem;
+  }
+
+  .sim-topbar__mobile-toggle-btn {
+    display: inline-flex;
+  }
+
+  .sim-topbar--minimized .sim-topbar__switcher,
+  .sim-topbar--minimized .sim-topbar__right,
+  .sim-topbar--hud-closed .sim-topbar__switcher {
+    display: none !important;
+  }
+
+  .sim-topbar__switcher {
+    order: 2;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.14rem;
+    scrollbar-width: none;
+  }
+
+  .sim-topbar__switcher::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sim-topbar__right {
+    order: 3;
+    width: 100%;
+    gap: 0.28rem;
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: none;
+    padding-bottom: 0.05rem;
+  }
+
+  .sim-topbar__right::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sim-topbar__tool-btn,
+  .sim-topbar__exit-btn,
+  .sim-topbar__mode-tab,
+  .sim-topbar__challenge-pill {
+    padding: 0.2rem 0.44rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .sim-topbar__vehicle-select-wrap {
+    padding: 0.16rem 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .sim-topbar__vehicle-select {
+    font-size: 0.66rem;
+  }
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  .sim-topbar__leaderboard-btn span {
+    display: none;
+  }
+
+  .sim-modal-backdrop {
+    padding: 0.5rem;
+  }
+
+  .sim-pause-card,
+  .sim-totaled-card {
+    padding: 1rem;
+    gap: 0.75rem;
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+    border-radius: 14px;
+  }
+
+  .sim-pause-card__title,
+  .sim-totaled-card__title {
+    font-size: 1.2rem;
+  }
+
+  .sim-pause-card__grid,
+  .sim-pause-card__vehicles {
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    gap: 0.35rem;
+  }
+
+  .sim-pause-card__option {
+    padding: 0.42rem 0.55rem;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .sim-topbar__mode-tab svg {
+    display: none;
+  }
+
+  .sim-topbar__mode-tab {
+    padding: 0.18rem 0.36rem;
+    font-size: 0.6rem;
+  }
+
+  .sim-topbar__mobile-toggle-btn {
+    padding: 0.2rem 0.38rem;
+    font-size: 0.6rem;
+  }
+}

@@ -5,6 +5,8 @@ import {
   AlertOctagon,
   ArrowLeft,
   Car,
+  ChevronDown,
+  ChevronUp,
   Compass,
   Eye,
   EyeOff,
@@ -13,6 +15,7 @@ import {
   Pause,
   Play,
   RotateCcw,
+  SlidersHorizontal,
   Trophy,
   Wrench,
   X,
@@ -211,6 +214,16 @@ export function SimulationScreen({
   const [attemptResetKey, setAttemptResetKey] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isHudOpen, setIsHudOpen] = useState<boolean>(true);
+  const [isMobileView, setIsMobileView] = useState<boolean>(() =>
+    typeof window !== 'undefined'
+      ? window.innerWidth <= 820 || window.innerHeight <= 520
+      : false
+  );
+  const [isTopbarMinimized, setIsTopbarMinimized] = useState<boolean>(() =>
+    typeof window !== 'undefined'
+      ? window.innerWidth <= 820 || window.innerHeight <= 520
+      : false
+  );
   const [showCustomizationDrawer, setShowCustomizationDrawer] =
     useState<boolean>(false);
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
@@ -219,10 +232,10 @@ export function SimulationScreen({
   const fullscreenRef = useRef<HTMLDivElement | null>(null);
   const switcherRef = useRef<HTMLElement | null>(null);
 
-  // Compute uniform UI scale so when the desktop browser is placed on the side (split-screen)
-  // or resized smaller, every UI in the simulation scales down to fit the exact same full-screen resolution
+  // Compute uniform UI scale for desktop split-screen while keeping mobile viewports at 1:1 native mobile UI scale
   const [uiScale, setUiScale] = useState<number>(() => {
     if (typeof window === 'undefined') return 1;
+    if (window.innerWidth <= 820 || window.innerHeight <= 520) return 1;
     const screenW = window.screen?.availWidth || 1680;
     const screenH = (window.screen?.availHeight || 960) - 100;
     const refW = Math.max(1680, Math.min(1920, screenW));
@@ -238,6 +251,13 @@ export function SimulationScreen({
       const el = fullscreenRef.current;
       const vw = el ? el.clientWidth || window.innerWidth : window.innerWidth;
       const vh = el ? el.clientHeight || window.innerHeight : window.innerHeight;
+      const mobile = vw <= 820 || vh <= 520;
+      setIsMobileView(mobile);
+      if (mobile) {
+        setIsTopbarMinimized(true);
+        setUiScale(1);
+        return;
+      }
       const screenW = window.screen?.availWidth || 1680;
       const screenH = (window.screen?.availHeight || 960) - 100;
       const refW = Math.max(1680, Math.min(1920, screenW));
@@ -1032,7 +1052,11 @@ export function SimulationScreen({
   return (
     <div
       ref={fullscreenRef}
-      className="sim-fullscreen"
+      className={`sim-fullscreen ${
+        isTopbarMinimized
+          ? 'sim-fullscreen--topbar-minimized'
+          : 'sim-fullscreen--topbar-expanded'
+      }`}
       data-testid="simulation-screen"
     >
       {/* Main Full-Screen 3D Simulation Viewport */}
@@ -1160,7 +1184,11 @@ export function SimulationScreen({
       >
         {/* Floating Top HUD Bar */}
         <header
-          className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''}`}
+          className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''} ${
+            isTopbarMinimized
+              ? 'sim-topbar--minimized'
+              : 'sim-topbar--expanded'
+          }`}
           aria-label="Simulator Controls"
         >
           {/* Left: Pause + Brand + Mode Switcher (Challenges vs Free Roam) */}
@@ -1215,9 +1243,40 @@ export function SimulationScreen({
                 onClick={() => handleSelectMode('freeroam')}
               >
                 <Globe size={13} aria-hidden="true" />
-                <span>Free Roam · Real Earth</span>
+                <span>
+                  Free Roam
+                  <span className="sim-topbar__mode-sub"> · Real Earth</span>
+                </span>
               </button>
             </div>
+
+            {/* Mobile Top Bar Minimize / Expand Toggle */}
+            <button
+              type="button"
+              className="sim-topbar__mobile-toggle-btn"
+              onClick={() => setIsTopbarMinimized((prev) => !prev)}
+              aria-expanded={!isTopbarMinimized}
+              title={
+                isTopbarMinimized
+                  ? 'Expand Top Bar Menu (Manoeuvres, Vehicles & AI Studio)'
+                  : 'Minimize Top Bar Menu'
+              }
+              data-testid="topbar-mobile-toggle"
+            >
+              <SlidersHorizontal size={12} aria-hidden="true" />
+              <span>
+                {isTopbarMinimized
+                  ? simulationMode === 'freeroam'
+                    ? activeCity.name.split(',')[0]
+                    : SHORT_CHALLENGE_LABELS[selectedChallengeId]
+                  : 'Minimize'}
+              </span>
+              {isTopbarMinimized ? (
+                <ChevronDown size={12} aria-hidden="true" />
+              ) : (
+                <ChevronUp size={12} aria-hidden="true" />
+              )}
+            </button>
           </div>
 
           {/* Center: 5-Manoeuvre Switcher (Challenges Mode) OR Real-Earth City Switcher (Free Roam Mode) */}
@@ -1237,7 +1296,12 @@ export function SimulationScreen({
                     className={`sim-topbar__challenge-pill ${
                       isCurrent ? 'sim-topbar__challenge-pill--active' : ''
                     }`}
-                    onClick={() => handleSelectChallenge(item.id)}
+                    onClick={() => {
+                      handleSelectChallenge(item.id);
+                      if (isMobileView) {
+                        setIsTopbarMinimized(true);
+                      }
+                    }}
                     aria-pressed={isCurrent}
                     title={`${item.title} (${item.difficulty})`}
                   >
@@ -1263,7 +1327,12 @@ export function SimulationScreen({
                     className={`sim-topbar__challenge-pill ${
                       isCurrent ? 'sim-topbar__challenge-pill--active' : ''
                     }`}
-                    onClick={() => handleSelectCity(city)}
+                    onClick={() => {
+                      handleSelectCity(city);
+                      if (isMobileView) {
+                        setIsTopbarMinimized(true);
+                      }
+                    }}
                     aria-pressed={isCurrent}
                     title={`${city.name} (${city.lat.toFixed(4)}, ${city.lng.toFixed(4)})`}
                   >

@@ -196,11 +196,33 @@ export function ChallengeHUD({
   };
 
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
-  const [missionCollapsed, setMissionCollapsed] = useState<boolean>(false);
-  const [telemetryCollapsed, setTelemetryCollapsed] = useState<boolean>(false);
+  const [missionCollapsed, setMissionCollapsed] = useState<boolean>(() =>
+    typeof window !== 'undefined'
+      ? window.innerWidth <= 820 || window.innerHeight <= 520
+      : false
+  );
+  const [telemetryCollapsed, setTelemetryCollapsed] = useState<boolean>(() =>
+    typeof window !== 'undefined'
+      ? window.innerWidth <= 820 || window.innerHeight <= 520
+      : false
+  );
   const [activeTouchSteer, setActiveTouchSteer] = useState<'left' | 'right' | null>(null);
   const [activeTouchPedal, setActiveTouchPedal] = useState<'accel' | 'brake' | null>(null);
   const [activeFlightBtn, setActiveFlightBtn] = useState<'ascend' | 'descend' | null>(null);
+
+  useEffect(() => {
+    const syncViewportCollapse = () => {
+      const mobile = window.innerWidth <= 820 || window.innerHeight <= 520;
+      if (mobile) {
+        setMissionCollapsed(true);
+        setTelemetryCollapsed(true);
+        setInstructionsExpanded(false);
+      }
+    };
+    syncViewportCollapse();
+    window.addEventListener('resize', syncViewportCollapse);
+    return () => window.removeEventListener('resize', syncViewportCollapse);
+  }, []);
 
   const { effectivePhysics } = useCustomization();
 

@@ -258,9 +258,14 @@
   flex-direction: column;
   gap: 0.45rem;
   align-self: start;
-  max-height: calc(100vh - 235px);
+  max-height: 100%;
   overflow-y: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pk-hud__mission::-webkit-scrollbar {
+  display: none;
 }
 
 .pk-hud__mission-top {
@@ -407,9 +412,14 @@
   flex-direction: column;
   gap: 0.65rem;
   align-self: start;
-  max-height: calc(100vh - 235px);
+  max-height: 100%;
   overflow-y: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pk-hud__telemetry::-webkit-scrollbar {
+  display: none;
 }
 
 .pk-hud__gauge-row {
@@ -1241,151 +1251,6 @@
   color: #ffffff;
 }
 
-/* Tablet & Small Laptop Responsive Layout */
-@media (max-width: 960px) {
-  .pk-hud {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: minmax(0, 1fr) auto auto;
-    grid-template-areas:
-      'mission telemetry'
-      'center center'
-      'wheel pedals';
-    padding: 6.4rem 0.65rem 0.65rem;
-    gap: 0.5rem;
-  }
-
-  .pk-hud__floating-toggle-bar {
-    top: 4.35rem;
-  }
-
-  .pk-hud__center-dock {
-    grid-area: center;
-    align-self: end;
-    justify-self: center;
-    margin-bottom: 0.15rem;
-  }
-}
-
-/* Mobile Phones & Compact Viewports: Push HUD to top/bottom edges so 3D Car & World are NEVER covered */
-@media (max-width: 820px), (max-height: 520px) {
-  .pk-hud {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 3.05rem 0.45rem 0.4rem;
-    gap: 0.32rem;
-    overflow: hidden;
-  }
-
-  .sim-fullscreen--topbar-expanded .pk-hud {
-    padding-top: 7.4rem;
-  }
-
-  /* When HUD is open on mobile, use the unified single-row mobile drawer bar instead of a separate toggle row */
-  .pk-hud:not(.pk-hud--closed) .pk-hud__floating-toggle-bar {
-    display: none;
-  }
-
-  .pk-hud--closed .pk-hud__floating-toggle-bar {
-    position: static;
-    transform: none;
-    width: 100%;
-    justify-content: space-between;
-    order: 1;
-    padding: 0 0.05rem;
-  }
-
-  .pk-hud__mobile-drawer-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.28rem;
-    overflow-x: auto;
-    width: 100%;
-    order: 1;
-    pointer-events: auto;
-    padding-bottom: 0.05rem;
-    scrollbar-width: none;
-  }
-
-  .pk-hud__mobile-drawer-bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .pk-hud__drawer-tab {
-    padding: 0.24rem 0.5rem;
-    font-size: 0.62rem;
-    border-radius: 7px;
-    flex-shrink: 0;
-  }
-
-  .pk-hud__drawer-tab--hud-min {
-    background-color: rgba(15, 23, 42, 0.9);
-    border-color: rgba(248, 113, 113, 0.4);
-    color: #fca5a5;
-  }
-
-  /* Constrain open top panels to a compact edge drawer (max 32vh) so they never cover the screen */
-  .pk-hud__mission,
-  .pk-hud__mission-freeroam,
-  .pk-hud__telemetry {
-    order: 2;
-    width: 100%;
-    max-height: 32vh;
-    overflow-y: auto;
-    padding: 0.5rem 0.65rem;
-    border-radius: 11px;
-  }
-
-  /* When a panel is collapsed on mobile, hide it completely since the mobile drawer bar has quick tabs */
-  .pk-hud__mission.pk-hud__panel--collapsed,
-  .pk-hud__mission-freeroam.pk-hud__panel--collapsed,
-  .pk-hud__telemetry.pk-hud__panel--collapsed {
-    display: none !important;
-  }
-
-  .pk-hud__challenge-title {
-    font-size: 0.88rem;
-  }
-
-  .pk-hud__gauge-row {
-    padding-bottom: 0.35rem;
-    gap: 0.5rem;
-  }
-
-  .pk-hud__arc-dial {
-    width: 92px;
-    height: 58px;
-  }
-
-  .pk-hud__speed-value {
-    font-size: 1.15rem;
-  }
-
-  /* Bottom touch controls and action dock stacked cleanly with zero overlap */
-  .pk-hud__center-dock {
-    order: 5;
-    margin-top: 0;
-    margin-bottom: 0;
-    width: auto;
-    max-width: 100%;
-    align-self: center;
-    justify-content: center;
-    padding: 0.28rem 0.42rem;
-    gap: 0.28rem;
-    border-radius: 10px;
-    flex-wrap: nowrap;
-  }
-
-  .pk-hud__center-dock .pk-btn {
-    padding: 0.3rem 0.52rem;
-    font-size: 0.66rem;
-    white-space: nowrap;
-    gap: 0.25rem;
-  }
-}
-
-
-
 /* ==========================================================================
    5. CAR HEALTH, STRUCTURAL DAMAGE SCHEMATIC & DETACHED PARTS HUD
    ========================================================================== */
@@ -1394,9 +1259,14 @@
   grid-area: mission;
   align-self: start;
   pointer-events: auto;
-  max-height: calc(100vh - 235px);
+  max-height: 100%;
   overflow-y: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pk-hud__mission-freeroam::-webkit-scrollbar {
+  display: none;
 }
 
 .pk-hud__freeroam-cta {
@@ -1611,6 +1481,7 @@
    6. REAL-EARTH FREE ROAM CITY & GPS SEARCH PANEL
    ========================================================================== */
 
+.freeroam-city-panel-root,
 .freeroam-panel {
   background-color: rgba(9, 12, 20, 0.82);
   backdrop-filter: blur(16px);
@@ -1624,19 +1495,29 @@
   color: #f8fafc;
 }
 
+.freeroam-hud-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.freeroam-hud-header,
 .freeroam-panel__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
+.freeroam-gps-meta,
 .freeroam-panel__title-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.16rem;
+  min-width: 0;
 }
 
+.freeroam-earth-badge,
 .freeroam-panel__eyebrow {
   display: inline-flex;
   align-items: center;
@@ -1648,23 +1529,61 @@
   color: #38bdf8;
 }
 
+.freeroam-city-title,
 .freeroam-panel__city-name {
   margin: 0;
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
+.freeroam-postcode-pill,
+.freeroam-panel__postcode {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  padding: 0.08rem 0.38rem;
+  border-radius: 6px;
+}
+
+.freeroam-city-subtitle,
 .freeroam-panel__region {
+  margin: 0;
   font-size: 0.68rem;
   color: #94a3b8;
 }
 
-.freeroam-panel__search-toggle {
+.freeroam-coords-readout {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.34rem 0.6rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  color: #94a3b8;
+}
+
+.freeroam-coords-readout strong {
+  color: #34d399;
+}
+
+.freeroam-coords-sep {
+  opacity: 0.6;
+}
+
+.freeroam-open-search-btn,
+.freeroam-panel__search-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.36rem 0.65rem;
   border-radius: 8px;
   background: rgba(56, 189, 248, 0.16);
   border: 1px solid rgba(56, 189, 248, 0.45);
@@ -1676,6 +1595,7 @@
   transition: all 140ms ease;
 }
 
+.freeroam-open-search-btn:hover,
 .freeroam-panel__search-toggle:hover,
 .freeroam-panel__search-toggle.is-open {
   background: rgba(56, 189, 248, 0.32);
@@ -1693,6 +1613,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.freeroam-minimap-box,
 .freeroam-minimap {
   width: 68px;
   height: 68px;
@@ -1702,6 +1623,7 @@
   border: 1px solid rgba(56, 189, 248, 0.32);
 }
 
+.freeroam-minimap-svg,
 .freeroam-minimap__svg {
   width: 100%;
   height: 100%;
@@ -1725,44 +1647,54 @@
   color: #34d399;
 }
 
-.freeroam-panel__postcode {
-  font-family: var(--font-mono, monospace);
-  font-size: 0.63rem;
-  font-weight: 700;
-  color: #fbbf24;
-}
-
 .freeroam-panel__rule-tag {
   font-size: 0.62rem;
   color: #94a3b8;
 }
 
+.freeroam-quick-cities,
 .freeroam-panel__quick-chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.28rem;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  padding-bottom: 0.05rem;
 }
 
+.freeroam-quick-cities::-webkit-scrollbar,
+.freeroam-panel__quick-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.freeroam-city-chip,
 .freeroam-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.22rem 0.5rem;
+  padding: 0.24rem 0.54rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(148, 163, 184, 0.22);
   color: #cbd5e1;
   font-size: 0.64rem;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
   cursor: pointer;
   transition: all 140ms ease;
 }
 
+.freeroam-city-chip:hover,
 .freeroam-chip:hover {
   border-color: rgba(56, 189, 248, 0.5);
   color: #ffffff;
 }
 
+.freeroam-city-chip.is-active,
 .freeroam-chip--active {
   background: rgba(14, 165, 233, 0.24);
   border-color: #38bdf8;
@@ -1778,22 +1710,43 @@
   gap: 0.5rem;
 }
 
+.freeroam-search-drawer-header,
 .freeroam-search-drawer__top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.freeroam-search-kicker {
+  display: block;
   font-family: var(--font-mono, monospace);
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 700;
+  letter-spacing: 0.08em;
   color: #7dd3fc;
 }
 
+.freeroam-search-heading {
+  margin: 0.1rem 0 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.freeroam-drawer-close,
 .freeroam-search-drawer__close {
   background: transparent;
   border: none;
   color: #94a3b8;
   cursor: pointer;
   padding: 0.15rem;
+}
+
+.freeroam-address-form {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .freeroam-search-form {
@@ -1819,11 +1772,13 @@
 
 .freeroam-search-input {
   flex: 1;
-  background: transparent;
-  border: none;
+  background: rgba(5, 8, 15, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 7px;
+  padding: 0.32rem 0.5rem;
   outline: none;
   color: #f8fafc;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   min-width: 0;
 }
 
@@ -1831,20 +1786,21 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.28rem 0.55rem;
-  border-radius: 6px;
+  padding: 0.32rem 0.6rem;
+  border-radius: 7px;
   background: #0284c7;
   border: none;
   color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 
 .freeroam-coord-form {
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
+  gap: 0.32rem;
   padding: 0.45rem;
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.65);
@@ -1867,6 +1823,18 @@
 }
 
 .freeroam-coord-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
+}
+
+.freeroam-coord-field label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  color: #94a3b8;
+}
+
+.freeroam-coord-field input {
   background: rgba(5, 8, 15, 0.9);
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 6px;
@@ -1880,8 +1848,9 @@
 .freeroam-coord-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.25rem;
-  padding: 0.26rem 0.55rem;
+  padding: 0.3rem 0.55rem;
   border-radius: 6px;
   background: #10b981;
   border: none;
@@ -1891,6 +1860,8 @@
   cursor: pointer;
 }
 
+.freeroam-search-status,
+.freeroam-results-loading,
 .freeroam-status-msg {
   font-size: 0.65rem;
   color: #7dd3fc;
@@ -1902,6 +1873,12 @@
   gap: 0.28rem;
   max-height: 155px;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.freeroam-results-list::-webkit-scrollbar {
+  display: none;
 }
 
 .freeroam-result-item {
@@ -1923,6 +1900,7 @@
   background: rgba(14, 165, 233, 0.16);
 }
 
+.freeroam-result-main,
 .freeroam-result-item__main {
   display: flex;
   flex-direction: column;
@@ -1930,11 +1908,13 @@
   min-width: 0;
 }
 
+.freeroam-result-title,
 .freeroam-result-item__title {
   font-size: 0.7rem;
   font-weight: 700;
 }
 
+.freeroam-result-sub,
 .freeroam-result-item__sub {
   font-size: 0.6rem;
   color: #94a3b8;
@@ -1943,11 +1923,21 @@
   text-overflow: ellipsis;
 }
 
+.freeroam-result-coords,
 .freeroam-result-item__coords {
   font-family: var(--font-mono, monospace);
   font-size: 0.58rem;
   color: #34d399;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.08rem;
+}
+
+.freeroam-result-badge {
+  font-size: 0.54rem;
+  color: #7dd3fc;
 }
 
 .spin-icon {
@@ -3351,9 +3341,10 @@
    ========================================================================== */
 
 .pk-replay-modal-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 60;
+  pointer-events: auto;
   background-color: rgba(6, 9, 14, 0.82);
   backdrop-filter: blur(10px);
   display: flex;
@@ -3364,7 +3355,7 @@
 
 .pk-replay-modal {
   width: min(980px, 100%);
-  max-height: 90vh;
+  max-height: 90%;
   overflow-y: auto;
   background-color: var(--color-bg-surface, #161b24);
   border: 1px solid rgba(56, 189, 248, 0.42);
@@ -3553,12 +3544,6 @@
   color: #ef4444;
 }
 
-@media (max-width: 820px) {
-  .pk-replay-modal__body {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ==========================================================================
    MOBILE VIRTUAL THUMBSTICK & HANDBRAKE DOCK
    ========================================================================== */
@@ -3704,6 +3689,7 @@
   transform: scale(0.95);
 }
 
+/* Mobile Phones & Compact Viewports: Minimized HUD Drawers & Non-Overlapping Touch Controls */
 @media (max-width: 900px), (max-height: 520px), (hover: none) and (pointer: coarse) {
   .pk-thumbstick-dock {
     display: flex;
@@ -3716,7 +3702,119 @@
   }
 }
 
-/* Portrait & Standard Mobile Viewports: Stack thumbstick dock above bottom action dock so they NEVER overlap */
+@media (max-width: 820px), (max-height: 520px) {
+  .pk-hud {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3.15rem 0.45rem 0.4rem;
+    gap: 0.32rem;
+    overflow: hidden;
+  }
+
+  .sim-fullscreen--topbar-expanded .pk-hud {
+    padding-top: 7.4rem;
+  }
+
+  .pk-hud:not(.pk-hud--closed) .pk-hud__floating-toggle-bar {
+    display: none;
+  }
+
+  .pk-hud--closed .pk-hud__floating-toggle-bar {
+    position: static;
+    transform: none;
+    width: 100%;
+    justify-content: space-between;
+    order: 1;
+    padding: 0 0.05rem;
+  }
+
+  .pk-hud__mobile-drawer-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.28rem;
+    overflow-x: auto;
+    width: 100%;
+    order: 1;
+    pointer-events: auto;
+    padding-bottom: 0.05rem;
+    scrollbar-width: none;
+  }
+
+  .pk-hud__mobile-drawer-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pk-hud__drawer-tab {
+    padding: 0.24rem 0.5rem;
+    font-size: 0.62rem;
+    border-radius: 7px;
+    flex-shrink: 0;
+  }
+
+  .pk-hud__drawer-tab--hud-min {
+    background-color: rgba(15, 23, 42, 0.9);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #fca5a5;
+  }
+
+  .pk-hud__mission,
+  .pk-hud__mission-freeroam,
+  .pk-hud__telemetry {
+    order: 2;
+    width: 100%;
+    max-height: 32vh;
+    overflow-y: auto;
+    padding: 0.5rem 0.65rem;
+    border-radius: 11px;
+  }
+
+  .pk-hud__mission.pk-hud__panel--collapsed,
+  .pk-hud__mission-freeroam.pk-hud__panel--collapsed,
+  .pk-hud__telemetry.pk-hud__panel--collapsed {
+    display: none !important;
+  }
+
+  .pk-hud__challenge-title {
+    font-size: 0.88rem;
+  }
+
+  .pk-hud__gauge-row {
+    padding-bottom: 0.35rem;
+    gap: 0.5rem;
+  }
+
+  .pk-hud__arc-dial {
+    width: 92px;
+    height: 58px;
+  }
+
+  .pk-hud__speed-value {
+    font-size: 1.15rem;
+  }
+
+  .pk-hud__center-dock {
+    order: 5;
+    margin-top: 0;
+    margin-bottom: 0;
+    width: auto;
+    max-width: 100%;
+    align-self: center;
+    justify-content: center;
+    padding: 0.28rem 0.42rem;
+    gap: 0.28rem;
+    border-radius: 10px;
+    flex-wrap: nowrap;
+  }
+
+  .pk-hud__center-dock .pk-btn {
+    padding: 0.3rem 0.52rem;
+    font-size: 0.66rem;
+    white-space: nowrap;
+    gap: 0.25rem;
+  }
+}
+
 @media (max-width: 820px) and (min-height: 521px) {
   .pk-thumbstick-dock {
     position: static;
@@ -3727,7 +3825,6 @@
   }
 }
 
-/* Landscape Mobile Viewports: Place center dock horizontally between left brake and right thumbstick */
 @media (max-height: 520px) {
   .pk-thumbstick-dock {
     position: absolute;
@@ -3737,8 +3834,8 @@
   }
 
   .pk-thumbstick {
-    width: 86px;
-    height: 86px;
+    width: 84px;
+    height: 84px;
   }
 
   .pk-thumbstick__knob {
@@ -3747,17 +3844,30 @@
   }
 
   .pk-thumbstick-brake {
-    width: 52px;
-    height: 52px;
-    font-size: 0.58rem;
+    width: 50px;
+    height: 50px;
+    font-size: 0.56rem;
   }
 
   .pk-hud__center-dock {
     order: 4;
     margin-top: auto;
     margin-bottom: 0;
+    margin-left: auto;
+    margin-right: auto;
+    width: fit-content;
     max-width: calc(100% - 160px);
     align-self: center;
+    flex-wrap: nowrap;
+    padding: 0.2rem 0.32rem;
+    gap: 0.2rem;
+  }
+
+  .pk-hud__center-dock .pk-btn {
+    padding: 0.22rem 0.38rem;
+    font-size: 0.58rem;
+    gap: 0.16rem;
+    white-space: nowrap;
   }
 
   .pk-hud__mission,
