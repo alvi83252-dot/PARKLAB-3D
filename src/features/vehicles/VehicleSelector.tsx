@@ -13,7 +13,9 @@ export interface VehicleSelectorProps {
   /** Currently selected vehicle ID */
   selectedVehicleId: string;
   /** Callback fired when a user selects a vehicle */
-  onSelect: (vehicleId: string) => void;
+  onSelect?: (vehicleId: string) => void;
+  /** Alias callback fired when a user selects a vehicle */
+  onSelectVehicle?: (vehicleId: string) => void;
   /** Optional override list of vehicles (defaults to VEHICLES) */
   vehicles?: readonly VehicleDefinition[];
   /** Optional flag to disable switching during active locking states */
@@ -129,11 +131,15 @@ const CATEGORY_LABELS: Record<VehicleCategory, string> = {
   sedan: 'Sedan',
   suv: 'Large SUV',
   sports: 'Flying Roadster',
+  compact: 'Compact',
+  saloon: 'Saloon',
+  'electric-roadster': 'Flying Roadster',
 };
 
 export function VehicleSelector({
   selectedVehicleId,
   onSelect,
+  onSelectVehicle,
   vehicles = VEHICLES,
   disabled = false,
   className = '',
@@ -191,7 +197,10 @@ export function VehicleSelector({
               className={`vk-selector__card ${
                 isSelected ? 'vk-selector__card--selected' : ''
               }`.trim()}
-              onClick={() => onSelect(vehicle.id)}
+              onClick={() => {
+                onSelect?.(vehicle.id);
+                onSelectVehicle?.(vehicle.id);
+              }}
             >
               <div className="vk-selector__card-top">
                 <span className="vk-selector__category-tag">

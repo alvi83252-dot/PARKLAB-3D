@@ -53,6 +53,8 @@ export interface VehicleControllerProps {
   worldBounds?: WorldBoundaryLimits;
   /** Optional external reset token to force respawn at initial transform */
   resetKey?: string | number;
+  /** Alias reset token to force respawn at initial transform */
+  resetTrigger?: string | number;
 }
 
 const DEFAULT_INITIAL_POSITION: Vec3 = [0, 0, 0];
@@ -69,6 +71,7 @@ export function VehicleController({
   onCollision,
   worldBounds,
   resetKey,
+  resetTrigger,
 }: VehicleControllerProps) {
   const rootGroupRef = useRef<THREE.Group | null>(null);
   const chassisSuspensionRef = useRef<THREE.Group | null>(null);
@@ -148,8 +151,10 @@ export function VehicleController({
       steeringAngle: 0,
       collisionCount: 0,
       isMoving: false,
+      isBraking: false,
+      isReversing: false,
     });
-  }, [spawnX, spawnY, spawnZ, initialRotationY, vehicle.id, resetKey]);
+  }, [spawnX, spawnY, spawnZ, initialRotationY, vehicle.id, resetKey, resetTrigger]);
 
   useFrame((frameState, delta) => {
     const physics = physicsRef.current;
@@ -307,6 +312,8 @@ export function VehicleController({
         steeringAngle: physics.steeringAngle,
         collisionCount: collisionCountRef.current,
         isMoving,
+        isBraking: physics.isBraking,
+        isReversing: physics.isReversing,
       });
     }
   });

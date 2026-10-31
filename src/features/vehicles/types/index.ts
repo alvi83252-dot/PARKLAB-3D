@@ -1,7 +1,9 @@
 /**
  * PARKLAB 3D — Vehicle Module Type Contracts
- * Matches Part 3 Shared Technical Contracts from the Master Project Specification.
+ * Re-exports shared technical contracts from src/types/.
  */
+
+import type { VehicleRuntimeState as BaseVehicleRuntimeState } from '../../../types/vehicle.types';
 
 export type {
   DrivetrainType,
@@ -12,7 +14,11 @@ export type {
   VehicleDefinition,
   VehicleDimensions,
   VehicleHandling,
-  VehicleRuntimeState,
 } from '../../../types/vehicle.types';
 
 export type { ObstacleDefinition } from '../../../types/challenge.types';
+
+export interface VehicleRuntimeState extends BaseVehicleRuntimeState {
+  isBraking?: boolean;
+  isReversing?: boolean;
+}
