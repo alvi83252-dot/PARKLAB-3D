@@ -5,6 +5,8 @@ import {
   AlertOctagon,
   ArrowLeft,
   Car,
+  ChevronDown,
+  ChevronUp,
   Compass,
   Eye,
   EyeOff,
@@ -212,6 +214,10 @@ export function SimulationScreen({
   const [attemptResetKey, setAttemptResetKey] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isHudOpen, setIsHudOpen] = useState<boolean>(true);
+  const [isTopbarMinimized, setIsTopbarMinimized] = useState<boolean>(() =>
+    typeof window !== 'undefined' &&
+    (window.innerWidth <= 900 || window.innerHeight <= 540)
+  );
   const [showCustomizationDrawer, setShowCustomizationDrawer] =
     useState<boolean>(false);
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
@@ -221,9 +227,11 @@ export function SimulationScreen({
   const switcherRef = useRef<HTMLElement | null>(null);
 
   // Compute uniform UI scale so when the desktop browser is placed on the side (split-screen)
-  // or resized smaller, every UI in the simulation scales down to fit the exact same full-screen resolution
+  // or resized smaller, every UI in the simulation scales down to fit the exact same full-screen resolution.
+  // On mobile viewports (<= 900px width or <= 540px height), use native 1:1 responsive layout so mobile CSS drawers work cleanly.
   const [uiScale, setUiScale] = useState<number>(() => {
     if (typeof window === 'undefined') return 1;
+    if (window.innerWidth <= 900 || window.innerHeight <= 540) return 1;
     const screenW = window.screen?.availWidth || 1680;
     const screenH = (window.screen?.availHeight || 960) - 100;
     const refW = Math.max(1680, Math.min(1920, screenW));
@@ -239,6 +247,11 @@ export function SimulationScreen({
       const el = fullscreenRef.current;
       const vw = el ? el.clientWidth || window.innerWidth : window.innerWidth;
       const vh = el ? el.clientHeight || window.innerHeight : window.innerHeight;
+      if (vw <= 900 || vh <= 540) {
+        setUiScale(1);
+        setIsTopbarMinimized(true);
+        return;
+      }
       const screenW = window.screen?.availWidth || 1680;
       const screenH = (window.screen?.availHeight || 960) - 100;
       const refW = Math.max(1680, Math.min(1920, screenW));
@@ -1216,7 +1229,9 @@ export function SimulationScreen({
       >
         {/* Floating Top HUD Bar */}
         <header
-          className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''}`}
+          className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''} ${
+            isTopbarMinimized ? 'sim-topbar--minimized' : ''
+          }`}
           aria-label="Simulator Controls"
         >
           {/* Left: Pause + Brand + Mode Switcher (Challenges vs Free Roam) */}
@@ -1274,6 +1289,34 @@ export function SimulationScreen({
                 <span>Free Roam · Real Earth</span>
               </button>
             </div>
+
+            {/* Mobile Quick Push / Minimize Topbar & Menu Button */}
+            <button
+              type="button"
+              className={`sim-topbar__mobile-toggle-btn ${
+                !isTopbarMinimized ? 'sim-topbar__mobile-toggle-btn--open' : ''
+              }`}
+              onClick={() => setIsTopbarMinimized((prev) => !prev)}
+              aria-expanded={!isTopbarMinimized}
+              title={
+                isTopbarMinimized
+                  ? 'Expand Topbar Menu & Controls'
+                  : 'Push & Minimize Topbar Menu'
+              }
+              data-testid="mobile-topbar-toggle-btn"
+            >
+              {isTopbarMinimized ? (
+                <>
+                  <span>Menu</span>
+                  <ChevronDown size={13} aria-hidden="true" />
+                </>
+              ) : (
+                <>
+                  <span>Push Topbar</span>
+                  <ChevronUp size={13} aria-hidden="true" />
+                </>
+              )}
+            </button>
           </div>
 
           {/* Center: 5-Manoeuvre Switcher (Challenges Mode) OR Real-Earth City Switcher (Free Roam Mode) */}
@@ -1338,12 +1381,20 @@ export function SimulationScreen({
               className={`sim-topbar__tool-btn sim-topbar__hud-toggle-btn ${
                 !isHudOpen ? 'sim-topbar__tool-btn--active' : ''
               }`}
-              onClick={() => setIsHudOpen((prev) => !prev)}
+              onClick={() =>
+                setIsHudOpen((prev) => {
+                  const next = !prev;
+                  if (!next) {
+                    setIsTopbarMinimized(true);
+                  }
+                  return next;
+                })
+              }
               aria-pressed={!isHudOpen}
               title={
                 isHudOpen
-                  ? 'Close HUD overlay to clear the screen (Shortcut: H)'
-                  : 'Open HUD overlay (Shortcut: H)'
+                  ? 'Minimize & Push HUD overlay off-screen (Shortcut: H)'
+                  : 'Expand HUD overlay (Shortcut: H)'
               }
             >
               {isHudOpen ? (
@@ -1351,7 +1402,7 @@ export function SimulationScreen({
               ) : (
                 <Eye size={13} aria-hidden="true" />
               )}
-              <span>{isHudOpen ? 'Hide HUD' : 'Show HUD'}</span>
+              <span>{isHudOpen ? 'Push HUD' : 'Show HUD'}</span>
             </button>
 
             <button
@@ -1494,7 +1545,15 @@ export function SimulationScreen({
               onRepairVehicle={handleResetAttempt}
               onToggleCamera={handleToggleCamera}
               isHudOpen={isHudOpen}
-              onToggleHud={() => setIsHudOpen((prev) => !prev)}
+              onToggleHud={() =>
+                setIsHudOpen((prev) => {
+                  const next = !prev;
+                  if (!next) {
+                    setIsTopbarMinimized(true);
+                  }
+                  return next;
+                })
+              }
               onOpenCustomizer={() => setShowCustomizationDrawer(true)}
               onDismissCrashReport={crashLoop.dismissCrashReport}
               onReplayCrashVoice={crashLoop.voiceCoach.replayLastCoaching}

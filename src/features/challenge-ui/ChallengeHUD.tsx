@@ -196,8 +196,20 @@ export function ChallengeHUD({
   };
 
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
-  const [missionCollapsed, setMissionCollapsed] = useState<boolean>(false);
-  const [telemetryCollapsed, setTelemetryCollapsed] = useState<boolean>(false);
+  const checkIsMobileViewport = () => typeof window !== 'undefined' && (window.innerWidth <= 900 || window.innerHeight <= 540);
+  const [missionCollapsed, setMissionCollapsed] = useState<boolean>(() => checkIsMobileViewport());
+  const [telemetryCollapsed, setTelemetryCollapsed] = useState<boolean>(() => checkIsMobileViewport());
+
+  useEffect(() => {
+    const handleViewportResize = () => {
+      if (checkIsMobileViewport()) {
+        setMissionCollapsed(true);
+        setTelemetryCollapsed(true);
+      }
+    };
+    window.addEventListener('resize', handleViewportResize);
+    return () => window.removeEventListener('resize', handleViewportResize);
+  }, []);
   const [activeTouchSteer, setActiveTouchSteer] = useState<'left' | 'right' | null>(null);
   const [activeTouchPedal, setActiveTouchPedal] = useState<'accel' | 'brake' | null>(null);
   const [activeFlightBtn, setActiveFlightBtn] = useState<'ascend' | 'descend' | null>(null);
@@ -392,12 +404,12 @@ export function ChallengeHUD({
           {isHudOpen ? (
             <>
               <EyeOff size={13} aria-hidden="true" />
-              <span>Close HUD</span>
+              <span>▲ Minimize HUD</span>
             </>
           ) : (
             <>
               <Eye size={13} aria-hidden="true" />
-              <span>Open HUD</span>
+              <span>▾ Expand HUD</span>
             </>
           )}
         </button>
@@ -407,6 +419,27 @@ export function ChallengeHUD({
           <div className="pk-hud__mini-status-pill">
             <span className="pk-hud__mini-speed">{displayMph} MPH</span>
             <span className="pk-hud__mini-gear">{gearSlot}</span>
+            {onReset && (
+              <button
+                type="button"
+                className="pk-hud__mini-action-btn"
+                onClick={onReset}
+                title="Restart & Repair Vehicle"
+              >
+                <RotateCcw size={11} aria-hidden="true" />
+              </button>
+            )}
+            {onEvaluate && (
+              <button
+                type="button"
+                className="pk-hud__mini-action-btn pk-hud__mini-action-btn--primary"
+                onClick={onEvaluate}
+                title="Park & Evaluate"
+              >
+                <Flag size={11} aria-hidden="true" />
+                <span>Park</span>
+              </button>
+            )}
             <span
               className={`pk-hud__mini-health ${
                 carHealth <= 30 ? 'pk-hud__mini-health--critical' : ''
@@ -433,7 +466,7 @@ export function ChallengeHUD({
             data-testid="mobile-hud-minimize-btn"
           >
             <EyeOff size={11} aria-hidden="true" />
-            <span>Min HUD</span>
+            <span>▲ Push HUD</span>
           </button>
 
           <button
@@ -746,7 +779,9 @@ export function ChallengeHUD({
         >
           <div className="pk-hud__telemetry-top-bar">
             <span className="pk-hud__label">
-              {effectivePhysics.skin.badge} · {effectivePhysics.tuning.badge}
+              {telemetryCollapsed
+                ? `${displayMph} MPH · ${gearSlot} · ${carHealth}% HP`
+                : `${effectivePhysics.skin.badge} · ${effectivePhysics.tuning.badge}`}
             </span>
             <button
               type="button"
@@ -774,82 +809,84 @@ export function ChallengeHUD({
             </button>
           </div>
 
-          <div className="pk-hud__gauge-row">
-            {/* Arc Speedometer Dial */}
-            <div className="pk-hud__arc-dial">
-              <svg
-                viewBox="0 0 120 86"
-                className="pk-hud__arc-svg"
-                aria-hidden="true"
-              >
-                <path
-                  d="M 16 74 A 46 46 0 1 1 104 74"
-                  fill="none"
-                  stroke="rgba(148, 163, 184, 0.18)"
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M 16 74 A 46 46 0 1 1 104 74"
-                  fill="none"
-                  stroke="url(#pkSpeedGrad)"
-                  strokeWidth="7"
-                  strokeLinecap="round"
-                  strokeDasharray={gaugeArcLength}
-                  strokeDashoffset={gaugeDashOffset}
-                />
-                <defs>
-                  <linearGradient
-                    id="pkSpeedGrad"
-                    x1="0%"
-                    y1="0%"
-                    x2="100%"
-                    y2="0%"
-                  >
-                    <stop offset="0%" stopColor="#38bdf8" />
-                    <stop offset="65%" stopColor="#ef4444" />
-                    <stop offset="100%" stopColor="#dc2626" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div className="pk-hud__speed-readout" aria-live="polite">
-                <span className="pk-hud__speed-value">{displayMph}</span>
-                <span className="pk-hud__speed-unit">MPH</span>
+          {!telemetryCollapsed && (
+            <div className="pk-hud__gauge-row">
+              {/* Arc Speedometer Dial */}
+              <div className="pk-hud__arc-dial">
+                <svg
+                  viewBox="0 0 120 86"
+                  className="pk-hud__arc-svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M 16 74 A 46 46 0 1 1 104 74"
+                    fill="none"
+                    stroke="rgba(148, 163, 184, 0.18)"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M 16 74 A 46 46 0 1 1 104 74"
+                    fill="none"
+                    stroke="url(#pkSpeedGrad)"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeDasharray={gaugeArcLength}
+                    strokeDashoffset={gaugeDashOffset}
+                  />
+                  <defs>
+                    <linearGradient
+                      id="pkSpeedGrad"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="65%" stopColor="#ef4444" />
+                      <stop offset="100%" stopColor="#dc2626" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="pk-hud__speed-readout" aria-live="polite">
+                  <span className="pk-hud__speed-value">{displayMph}</span>
+                  <span className="pk-hud__speed-unit">MPH</span>
+                </div>
               </div>
-            </div>
 
-            {/* Vertical D / P / R Shifter Tower + Status Badge */}
-            <div className="pk-hud__shifter-col">
-              <div className="pk-hud__dpr-tower" aria-label={`Gear ${gearSlot}`}>
+              {/* Vertical D / P / R Shifter Tower + Status Badge */}
+              <div className="pk-hud__shifter-col">
+                <div className="pk-hud__dpr-tower" aria-label={`Gear ${gearSlot}`}>
+                  <span
+                    className={`pk-hud__dpr-slot ${
+                      gearSlot === 'D' ? 'is-active is-drive' : ''
+                    }`}
+                  >
+                    D
+                  </span>
+                  <span
+                    className={`pk-hud__dpr-slot ${
+                      gearSlot === 'P' ? 'is-active is-park' : ''
+                    }`}
+                  >
+                    P
+                  </span>
+                  <span
+                    className={`pk-hud__dpr-slot ${
+                      gearSlot === 'R' ? 'is-active is-reverse' : ''
+                    }`}
+                  >
+                    R
+                  </span>
+                </div>
                 <span
-                  className={`pk-hud__dpr-slot ${
-                    gearSlot === 'D' ? 'is-active is-drive' : ''
-                  }`}
+                  className={`pk-hud__gear-badge pk-hud__gear-badge--${gearModifier}`}
                 >
-                  D
-                </span>
-                <span
-                  className={`pk-hud__dpr-slot ${
-                    gearSlot === 'P' ? 'is-active is-park' : ''
-                  }`}
-                >
-                  P
-                </span>
-                <span
-                  className={`pk-hud__dpr-slot ${
-                    gearSlot === 'R' ? 'is-active is-reverse' : ''
-                  }`}
-                >
-                  R
+                  {gearLabel}
                 </span>
               </div>
-              <span
-                className={`pk-hud__gear-badge pk-hud__gear-badge--${gearModifier}`}
-              >
-                {gearLabel}
-              </span>
             </div>
-          </div>
+          )}
 
           {/* CAR STRUCTURAL HEALTH & REAL-LIFE CRASH DAMAGE PANEL */}
           <div
