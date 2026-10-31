@@ -62,6 +62,8 @@ export function getObstacleReadableLabel(obstacle: ObstacleDefinition): string {
       return `Traffic Cone (${obstacle.id})`;
     case 'kerb':
       return `Kerb (${obstacle.id})`;
+    default:
+      return obstacle.label ?? `Obstacle (${obstacle.id})`;
   }
 }
 

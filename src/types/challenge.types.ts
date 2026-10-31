@@ -4,6 +4,8 @@
 
 import type { Vec3, VehicleDimensions } from './vehicle.types';
 
+export type { Vec3, VehicleDimensions };
+
 export type ChallengeId =
   | 'parallel'
   | 'reverse-bay'
@@ -17,12 +19,23 @@ export type ChallengeDifficulty =
   | 'advanced'
   | 'expert';
 
+export type ObstacleKind =
+  | 'parked-car'
+  | 'cone'
+  | 'kerb'
+  | 'building'
+  | 'barrier'
+  | 'lamppost'
+  | 'island';
+
 export interface ObstacleDefinition {
   id: string;
-  kind: 'parked-car' | 'cone' | 'kerb';
+  kind: ObstacleKind;
   position: Vec3;
   rotationY: number;
   dimensions: VehicleDimensions;
+  label?: string;
+  color?: string;
 }
 
 export interface ParkingTarget {

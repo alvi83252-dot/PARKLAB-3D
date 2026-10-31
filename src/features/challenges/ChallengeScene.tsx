@@ -9,6 +9,7 @@
  *   `pull-up-right`).
  * - All static obstacles (`parked-car`, `cone`, `kerb`) directly from
  *   `challenge.obstacles` so visual geometry and collision boxes match 1:1.
+ *   Parked cars use the ultra-detailed sculpted 3D VehicleModel fleet.
  *
  * Designed to mount inside the existing Canvas alongside `ParkingEnvironment`
  * and `VehicleController`. Does NOT create its own Canvas.
@@ -17,14 +18,17 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, MeshBasicMaterial } from 'three';
-import { VehicleModel } from '../vehicles/VehicleModels';
+import { getVehicleById } from '../vehicles/vehicles';
+import {
+  VehicleModel,
+  type VehicleLightRefs,
+  type VehicleWheelRefs,
+} from '../vehicles/VehicleModels';
 import type {
   ObstacleDefinition,
   ParkingChallengeDefinition,
   ParkingTarget,
   Vec3,
-  VehicleCategory,
-  VehicleDefinition,
 } from './types';
 
 export interface ChallengeSceneProps {
@@ -33,22 +37,39 @@ export interface ChallengeSceneProps {
   showGuides?: boolean;
 }
 
-const PARKED_CAR_PALETTE = [
-  '#2563eb', // Sapphire Blue
-  '#475569', // Slate Metallic
-  '#dc2626', // Crimson Red
-  '#0f766e', // Deep Teal
-  '#7c3aed', // Midnight Violet
-  '#d97706', // Amber Bronze
+const PARKED_VEHICLE_ARCHETYPES = [
+  'apex-hypercar',
+  'porsche-taycan',
+  'amg-gt',
+  'sedan',
+  'tesla-roadster',
+  'suv',
+  'hatchback',
 ] as const;
 
-function getCarColorFromId(id: string): string {
+const PARKED_CAR_PALETTE = [
+  '#141821', // Obsidian Metallic (ARTHUR V12 Hypercar)
+  '#0a0d14', // Jet Black Metallic (YUSUFDEMIR201 Saloon)
+  '#525866', // Satin Gunmetal Grey (AMG GT R)
+  '#1d4ed8', // Sapphire Blue Metallic
+  '#b91c1c', // Crimson Red Multi-Coat
+  '#0f766e', // Deep Emerald Teal
+] as const;
+
+function getParkedVehicleSpecFromId(id: string) {
   let hash = 0;
   for (let i = 0; i < id.length; i += 1) {
     hash = (hash * 31 + id.charCodeAt(i)) | 0;
   }
-  const index = Math.abs(hash) % PARKED_CAR_PALETTE.length;
-  return PARKED_CAR_PALETTE[index];
+  const absHash = Math.abs(hash);
+  const archetypeId =
+    PARKED_VEHICLE_ARCHETYPES[absHash % PARKED_VEHICLE_ARCHETYPES.length];
+  const color = PARKED_CAR_PALETTE[absHash % PARKED_CAR_PALETTE.length];
+  const baseVehicle = getVehicleById(archetypeId);
+  return {
+    ...baseVehicle,
+    bodyColor: color,
+  };
 }
 
 interface TargetBayMarkingsProps {
@@ -249,13 +270,6 @@ function PullUpRightStageGuide() {
   );
 }
 
-const PARKED_CAR_CATEGORIES: readonly VehicleCategory[] = [
-  'sedan',
-  'hatchback',
-  'suv',
-  'sports',
-] as const;
-
 interface ParkedCarObstacleProps {
   obstacle: ObstacleDefinition;
 }
@@ -263,32 +277,28 @@ interface ParkedCarObstacleProps {
 function ParkedCarObstacle({ obstacle }: ParkedCarObstacleProps) {
   const { position, rotationY, dimensions, id } = obstacle;
   const { width, length } = dimensions;
+  const parkedVehicle = useMemo(() => getParkedVehicleSpecFromId(id), [id]);
 
-  const parkedVehicle = useMemo<VehicleDefinition>(() => {
-    let hash = 0;
-    for (let i = 0; i < id.length; i += 1) {
-      hash = (hash * 31 + id.charCodeAt(i)) | 0;
-    }
-    const absHash = Math.abs(hash);
-    const category =
-      PARKED_CAR_CATEGORIES[absHash % PARKED_CAR_CATEGORIES.length];
-    const bodyColor = getCarColorFromId(id);
+  const wheelRefs = useRef<VehicleWheelRefs>({
+    frontLeftSteer: null,
+    frontRightSteer: null,
+    frontLeftSpin: null,
+    frontRightSpin: null,
+    rearLeftSpin: null,
+    rearRightSpin: null,
+  });
 
-    return {
-      id: `parked-${id}`,
-      name: 'Parked Vehicle',
-      category,
-      dimensions,
-      handling: {
-        maxForwardSpeedMps: 0,
-        maxReverseSpeedMps: 0,
-        accelerationMps2: 0,
-        brakingMps2: 0,
-        steeringRate: 0,
-      },
-      bodyColor,
-    };
-  }, [dimensions, id]);
+  const lightRefs = useRef<VehicleLightRefs>({
+    brakeLightLeft: null,
+    brakeLightRight: null,
+    brakeLightBar: null,
+    reverseLightLeft: null,
+    reverseLightRight: null,
+  });
+
+  const scaleX = width / Math.max(1.5, parkedVehicle.dimensions.width);
+  const scaleZ = length / Math.max(3.5, parkedVehicle.dimensions.length);
+  const scaleY = (scaleX + scaleZ) * 0.5;
 
   return (
     <group
@@ -305,8 +315,15 @@ function ParkedCarObstacle({ obstacle }: ParkedCarObstacleProps) {
         <meshBasicMaterial color="#94a3b8" transparent opacity={0.35} />
       </mesh>
 
-      {/* High-detail procedural 3D vehicle model (Sedan, Hatchback, SUV, or Flying Tesla Roadster) matching obstacle dimensions */}
-      <VehicleModel vehicle={parkedVehicle} isTrafficObstacle />
+      {/* High-Detail Sculpted 3D Vehicle Model */}
+      <group scale={[scaleX, scaleY, scaleZ]}>
+        <VehicleModel
+          vehicle={parkedVehicle}
+          wheelRefs={wheelRefs}
+          lightRefs={lightRefs}
+          isTrafficObstacle
+        />
+      </group>
     </group>
   );
 }

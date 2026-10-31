@@ -1069,3 +1069,616 @@
     padding: var(--space-6);
   }
 }
+
+
+/* ==========================================================================
+   PARKLAB 3D — Full-Screen Experience, Transition Curtain & Simulator Styles
+   ========================================================================== */
+
+.parklab-experience {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #05070a;
+  color: #f8fafc;
+}
+
+.parklab-experience--gameplay {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.parklab-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(15, 20, 30, 0.96) 0%,
+    rgba(4, 6, 10, 0.99) 100%
+  );
+  backdrop-filter: blur(18px);
+  opacity: 0;
+  transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.parklab-curtain--active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.parklab-curtain__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: center;
+  transform: translateY(8px);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.parklab-curtain--active .parklab-curtain__inner {
+  transform: translateY(0);
+}
+
+.parklab-curtain__eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #ef4444;
+}
+
+.parklab-curtain__title {
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #f8fafc;
+}
+
+.sim-fullscreen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: #07090d;
+  display: flex;
+  flex-direction: column;
+}
+
+.sim-topbar {
+  position: absolute;
+  top: 0.75rem;
+  left: 1.15rem;
+  right: 1.15rem;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.48rem 0.75rem;
+  border-radius: 14px;
+  background-color: rgba(8, 11, 18, 0.76);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.68);
+}
+
+.sim-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.sim-topbar__pause-btn {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #f8fafc;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.sim-topbar__pause-btn:hover {
+  background-color: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.55);
+  transform: translateY(-1px);
+}
+
+.sim-topbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-right: 0.35rem;
+}
+
+.sim-topbar__brand-mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.85);
+}
+
+.sim-topbar__brand-text {
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #f8fafc;
+}
+
+.sim-topbar__challenge-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #f87171;
+  background-color: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.sim-topbar__switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem;
+  border-radius: 10px;
+  background-color: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.sim-topbar__challenge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.65rem;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.sim-topbar__challenge-pill:hover {
+  color: #f8fafc;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.sim-topbar__challenge-pill--active {
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    rgba(220, 38, 38, 0.88) 0%,
+    rgba(185, 28, 28, 0.92) 100%
+  );
+  border-color: rgba(248, 113, 113, 0.55);
+  box-shadow: 0 4px 12px -2px rgba(220, 38, 38, 0.5);
+}
+
+.sim-topbar__challenge-num {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.64rem;
+  opacity: 0.75;
+}
+
+.sim-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.sim-topbar__vehicle-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+.sim-topbar__vehicle-icon {
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+.sim-topbar__vehicle-select {
+  background: transparent;
+  border: none;
+  color: #f8fafc;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  padding-right: 0.25rem;
+}
+
+.sim-topbar__vehicle-select option {
+  background-color: #0f141e;
+  color: #f8fafc;
+}
+
+.sim-topbar__tool-btn,
+.sim-topbar__exit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.36rem 0.68rem;
+  border-radius: 8px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.sim-topbar__tool-btn {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+}
+
+.sim-topbar__tool-btn--active {
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #e0f2fe;
+}
+
+.sim-topbar__tool-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.sim-topbar__exit-btn {
+  background-color: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.sim-topbar__exit-btn:hover {
+  background-color: rgba(239, 68, 68, 0.26);
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #ffffff;
+}
+
+.sim-viewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #080a0f;
+}
+
+.sim-hud-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sim-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background-color: rgba(6, 9, 14, 0.8);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.sim-pause-card {
+  width: 100%;
+  max-width: 580px;
+  background-color: rgba(15, 20, 29, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 1.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  color: #f8fafc;
+}
+
+.sim-pause-card__eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #ef4444;
+  text-transform: uppercase;
+}
+
+.sim-pause-card__title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sim-pause-card__subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.sim-pause-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sim-pause-card__label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.sim-pause-card__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.45rem;
+}
+
+.sim-pause-card__vehicles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+}
+
+.sim-pause-card__option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 9px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.sim-pause-card__option:hover {
+  background-color: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+.sim-pause-card__option--active {
+  background-color: rgba(220, 38, 38, 0.2);
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.sim-pause-card__option-num {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  color: #f87171;
+}
+
+.sim-pause-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sim-topbar__mode-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sim-topbar__mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 140ms ease;
+}
+
+.sim-topbar__mode-tab:hover {
+  color: #f8fafc;
+}
+
+.sim-topbar__mode-tab--active-challenges {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #ffffff;
+}
+
+.sim-topbar__mode-tab--active-freeroam {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #ffffff;
+  box-shadow: 0 4px 12px -2px rgba(14, 165, 233, 0.45);
+}
+
+.sim-totaled-card {
+  width: 100%;
+  max-width: 520px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(127, 29, 29, 0.48) 0%,
+    rgba(12, 16, 24, 0.97) 68%
+  );
+  border: 1px solid rgba(239, 68, 68, 0.65);
+  border-radius: 18px;
+  padding: 1.75rem;
+  box-shadow:
+    0 0 0 1px rgba(239, 68, 68, 0.28),
+    0 24px 60px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: #f8fafc;
+  text-align: center;
+  align-items: center;
+}
+
+.sim-totaled-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.sim-totaled-card__title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.sim-totaled-card__desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+  max-width: 44ch;
+}
+
+.sim-totaled-card__stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(9, 13, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sim-totaled-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sim-totaled-card__stat-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.62rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.sim-totaled-card__stat-value {
+  font-family: var(--font-mono, monospace);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f87171;
+}
+
+.sim-totaled-card__countdown {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.76rem;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.sim-totaled-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+@media (max-width: 1080px) {
+  .sim-topbar__challenge-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .sim-topbar {
+    flex-wrap: wrap;
+    top: 0.45rem;
+    left: 0.55rem;
+    right: 0.55rem;
+    padding: 0.4rem 0.55rem;
+  }
+
+  .sim-topbar__switcher {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

@@ -1,5 +1,6 @@
 import {
   Blocks,
+  Gauge,
   Globe,
   Paintbrush,
   Sparkles,
@@ -9,6 +10,7 @@ import {
 import {
   CAR_ACCESSORIES,
   CAR_SKINS,
+  CAR_TUNING_PRESETS,
   CREATIVE_BUNDLES,
   CUSTOM_PAINT_SWATCHES,
   ENVIRONMENT_THEMES,
@@ -33,9 +35,11 @@ export function CustomizationStudioPanel({
     customization,
     skinSpec,
     themeSpec,
+    effectivePhysics,
     setCarSkin,
     setCustomColor,
     setAccessory,
+    setTuningPreset,
     setApplyToTraffic,
     setEnvironmentTheme,
     applyBundle,
@@ -462,6 +466,142 @@ export function CustomizationStudioPanel({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Real-World Physics & Crash Tuning for Any Customized Car */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                paddingTop: '6px',
+                borderTop: '1px solid rgba(148, 163, 184, 0.14)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '6px',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    color: '#38bdf8',
+                  }}
+                >
+                  <Gauge size={13} aria-hidden="true" />
+                  <span>Real Physics &amp; Crash Setup:</span>
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  {CAR_TUNING_PRESETS.map((preset) => {
+                    const active =
+                      (customization.car.tuningPreset ?? 'authentic') ===
+                      preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setTuningPreset(preset.id)}
+                        style={{
+                          cursor: 'pointer',
+                          padding: '3px 8px',
+                          borderRadius: '7px',
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          border: active
+                            ? '1px solid #38bdf8'
+                            : '1px solid rgba(148, 163, 184, 0.22)',
+                          background: active
+                            ? 'rgba(56, 189, 248, 0.22)'
+                            : 'rgba(15, 23, 42, 0.8)',
+                          color: active ? '#e0f2fe' : '#cbd5e1',
+                        }}
+                      >
+                        {preset.badge}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Live Physics Multipliers Pill Row */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '5px',
+                  fontSize: '0.68rem',
+                  color: '#cbd5e1',
+                }}
+              >
+                <span
+                  style={{
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid rgba(148, 163, 184, 0.18)',
+                  }}
+                >
+                  Mass: <strong>{Math.round(effectivePhysics.massMultiplier * 100)}%</strong>
+                </span>
+                <span
+                  style={{
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid rgba(148, 163, 184, 0.18)',
+                  }}
+                >
+                  Accel: <strong>{Math.round(effectivePhysics.accelerationMultiplier * 100)}%</strong>
+                </span>
+                <span
+                  style={{
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid rgba(148, 163, 184, 0.18)',
+                  }}
+                >
+                  Grip: <strong>{Math.round(effectivePhysics.gripMultiplier * 100)}%</strong>
+                </span>
+                <span
+                  style={{
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid rgba(148, 163, 184, 0.18)',
+                  }}
+                >
+                  Crash Bounce: <strong>{Math.round(effectivePhysics.restitutionMultiplier * 100)}%</strong>
+                </span>
+                <span
+                  style={{
+                    padding: '2px 7px',
+                    borderRadius: '6px',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    border: '1px solid rgba(148, 163, 184, 0.18)',
+                  }}
+                >
+                  Durability: <strong>{Math.round(effectivePhysics.durabilityMultiplier * 100)}%</strong>
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: '0.71rem',
+                  color: '#94a3b8',
+                  lineHeight: 1.35,
+                }}
+              >
+                {skinSpec.physics.physicsSummary}
               </div>
             </div>
           </div>

@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type MutableRefObject,
   type ReactNode,
 } from 'react';
 import Lenis from 'lenis';
@@ -17,6 +18,23 @@ export interface LenisScrollMetrics {
   direction: number;
   progress: number;
 }
+
+export interface ScrollTelemetry {
+  /** Current vertical scroll offset in pixels */
+  scrollY: number;
+  /** Maximum scrollable height in pixels */
+  limit: number;
+  /** Normalized overall page scroll progress [0..1] */
+  progress: number;
+  /** Current scroll velocity */
+  velocity: number;
+  /** Normalized progress within the #showcase section [0..1] */
+  showcaseProgress: number;
+  /** Normalized progress within the #hero section [0..1] */
+  heroProgress: number;
+}
+
+export type LenisScrollState = ScrollTelemetry;
 
 export type LenisScrollSubscriber = (metrics: LenisScrollMetrics) => void;
 
@@ -34,6 +52,15 @@ export interface LenisContextValue {
   isReady: boolean;
 }
 
+export interface UseLenisScrollResult extends LenisContextValue {
+  /** High-frequency ref read directly inside Three.js useFrame without React re-renders */
+  scrollStateRef: MutableRefObject<ScrollTelemetry>;
+  /** Ref for the top scroll progress indicator bar DOM element */
+  progressBarRef: MutableRefObject<HTMLDivElement | null>;
+  /** Whether reduced motion is active */
+  prefersReducedMotion: boolean;
+}
+
 const DEFAULT_METRICS: LenisScrollMetrics = {
   scroll: 0,
   limit: 1,
@@ -42,11 +69,12 @@ const DEFAULT_METRICS: LenisScrollMetrics = {
   progress: 0,
 };
 
-const LenisContext = createContext<LenisContextValue>({
+const LenisContext = createContext<LenisContextValue & { hasProvider?: boolean }>({
   subscribe: () => () => {},
   scrollTo: () => {},
   getMetrics: () => DEFAULT_METRICS,
   isReady: false,
+  hasProvider: false,
 });
 
 export interface LenisProviderProps {
@@ -62,9 +90,10 @@ export function LenisProvider({ children, lerp = 0.085 }: LenisProviderProps) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const lenis = new Lenis({
       lerp: prefersReducedMotion ? 1 : lerp,
@@ -132,13 +161,18 @@ export function LenisProvider({ children, lerp = 0.085 }: LenisProviderProps) {
     ) => {
       if (lenisRef.current) {
         lenisRef.current.scrollTo(target, {
-          offset: options?.offset ?? -64,
-          duration: options?.duration ?? 1.2,
+          offset: options?.offset ?? 0,
+          duration: options?.duration ?? 1.15,
           immediate: options?.immediate ?? false,
         });
       } else if (typeof target === 'string') {
         const el = document.querySelector(target);
         el?.scrollIntoView({ behavior: 'smooth' });
+      } else if (typeof target === 'number' && typeof window !== 'undefined') {
+        window.scrollTo({
+          top: target + (options?.offset ?? 0),
+          behavior: options?.immediate ? 'auto' : 'smooth',
+        });
       }
     },
     []
@@ -146,12 +180,13 @@ export function LenisProvider({ children, lerp = 0.085 }: LenisProviderProps) {
 
   const getMetrics = useCallback(() => metricsRef.current, []);
 
-  const contextValue = useMemo<LenisContextValue>(
+  const contextValue = useMemo(
     () => ({
       subscribe,
       scrollTo,
       getMetrics,
       isReady,
+      hasProvider: true,
     }),
     [subscribe, scrollTo, getMetrics, isReady]
   );
@@ -163,8 +198,201 @@ export function LenisProvider({ children, lerp = 0.085 }: LenisProviderProps) {
   );
 }
 
-export function useLenisScroll(): LenisContextValue {
-  return useContext(LenisContext);
+export function useLenisScroll(enabled = true): UseLenisScrollResult {
+  const ctx = useContext(LenisContext);
+  const standaloneLenisRef = useRef<Lenis | null>(null);
+  const progressBarRef = useRef<HTMLDivElement | null>(null);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState<boolean>(
+    () =>
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
+  const scrollStateRef = useRef<ScrollTelemetry>({
+    scrollY: 0,
+    limit: 1,
+    progress: 0,
+    velocity: 0,
+    showcaseProgress: 0,
+    heroProgress: 0,
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  const computeSectionMetrics = useCallback(
+    (scrollY: number, limit: number, velocity: number) => {
+      const safeLimit = Math.max(1, limit);
+      const progress = Math.max(0, Math.min(1, scrollY / safeLimit));
+
+      const vh = typeof window !== 'undefined' ? Math.max(1, window.innerHeight) : 900;
+      const heroProgress = Math.max(0, Math.min(1, scrollY / vh));
+
+      let showcaseProgress = 0;
+      if (typeof document !== 'undefined') {
+        const showcaseEl = document.getElementById('showcase');
+        if (showcaseEl) {
+          const rect = showcaseEl.getBoundingClientRect();
+          const totalTravel = Math.max(1, rect.height - vh * 0.65);
+          const scrolledInto = -rect.top + vh * 0.25;
+          showcaseProgress = Math.max(0, Math.min(1, scrolledInto / totalTravel));
+        }
+      }
+
+      scrollStateRef.current.scrollY = scrollY;
+      scrollStateRef.current.limit = safeLimit;
+      scrollStateRef.current.progress = progress;
+      scrollStateRef.current.velocity = velocity;
+      scrollStateRef.current.heroProgress = heroProgress;
+      scrollStateRef.current.showcaseProgress = showcaseProgress;
+
+      if (progressBarRef.current) {
+        progressBarRef.current.style.transform = `scaleX(${progress.toFixed(4)})`;
+      }
+    },
+    []
+  );
+
+  // Sync telemetry either from the parent LenisProvider or a standalone instance
+  useEffect(() => {
+    if (!enabled || typeof window === 'undefined') {
+      if (standaloneLenisRef.current) {
+        standaloneLenisRef.current.destroy();
+        standaloneLenisRef.current = null;
+      }
+      return;
+    }
+
+    if (ctx.hasProvider) {
+      return ctx.subscribe((metrics) => {
+        computeSectionMetrics(metrics.scroll, metrics.limit, metrics.velocity);
+      });
+    }
+
+    if (prefersReducedMotion) {
+      const handleNativeScroll = () => {
+        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        const limit = Math.max(
+          1,
+          document.documentElement.scrollHeight - window.innerHeight
+        );
+        computeSectionMetrics(scrollY, limit, 0);
+      };
+
+      handleNativeScroll();
+      window.addEventListener('scroll', handleNativeScroll, { passive: true });
+      window.addEventListener('resize', handleNativeScroll, { passive: true });
+      return () => {
+        window.removeEventListener('scroll', handleNativeScroll);
+        window.removeEventListener('resize', handleNativeScroll);
+      };
+    }
+
+    const lenis = new Lenis({
+      duration: 1.05,
+      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.5,
+      autoRaf: false,
+    });
+
+    standaloneLenisRef.current = lenis;
+
+    const unsubscribeScroll = lenis.on('scroll', (instance: Lenis) => {
+      computeSectionMetrics(instance.scroll, instance.limit, instance.velocity);
+    });
+
+    computeSectionMetrics(
+      window.scrollY || 0,
+      Math.max(1, document.documentElement.scrollHeight - window.innerHeight),
+      0
+    );
+
+    let rafId = 0;
+    const raf = (time: number) => {
+      lenis.raf(time);
+      rafId = window.requestAnimationFrame(raf);
+    };
+    rafId = window.requestAnimationFrame(raf);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      unsubscribeScroll();
+      lenis.destroy();
+      standaloneLenisRef.current = null;
+    };
+  }, [ctx, enabled, prefersReducedMotion, computeSectionMetrics]);
+
+  const scrollTo = useCallback(
+    (
+      target: string | number | HTMLElement,
+      options?: { offset?: number; duration?: number; immediate?: boolean }
+    ) => {
+      if (ctx.hasProvider) {
+        ctx.scrollTo(target, options);
+        return;
+      }
+
+      if (standaloneLenisRef.current && !prefersReducedMotion) {
+        standaloneLenisRef.current.scrollTo(target, {
+          offset: options?.offset ?? 0,
+          duration: options?.duration ?? 1.1,
+          immediate: options?.immediate ?? false,
+        });
+        return;
+      }
+
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      if (typeof target === 'number') {
+        window.scrollTo({
+          top: target + (options?.offset ?? 0),
+          behavior: prefersReducedMotion || options?.immediate ? 'auto' : 'smooth',
+        });
+      } else {
+        const el =
+          typeof target === 'string'
+            ? (document.querySelector(target) as HTMLElement | null)
+            : target;
+        if (el) {
+          const top =
+            el.getBoundingClientRect().top +
+            window.scrollY +
+            (options?.offset ?? 0);
+          window.scrollTo({
+            top,
+            behavior: prefersReducedMotion || options?.immediate ? 'auto' : 'smooth',
+          });
+        }
+      }
+    },
+    [ctx, prefersReducedMotion]
+  );
+
+  return {
+    subscribe: ctx.subscribe,
+    getMetrics: ctx.getMetrics,
+    isReady: ctx.isReady || Boolean(standaloneLenisRef.current),
+    scrollStateRef,
+    progressBarRef,
+    scrollTo,
+    prefersReducedMotion,
+  };
 }
 
 /**
