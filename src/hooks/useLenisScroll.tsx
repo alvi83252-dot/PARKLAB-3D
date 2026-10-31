@@ -136,7 +136,166 @@ export function LenisProvider({ children, lerp = 0.085 }: LenisProviderProps) {
     };
     rafId = window.requestAnimationFrame(raf);
 
+    // =========================================================================
+    // CLICK-AND-DRAG WEBPAGE GRAB-SCROLL (Pull Upwards -> Scroll Down Webpage)
+    // =========================================================================
+    const DRAG_ACTIVATION_THRESHOLD_PX = 5;
+    const DRAG_MULTIPLIER = 1.2;
+    const INERTIA_THROW_MS = 240;
+
+    let isPointerDown = false;
+    let isGrabDragging = false;
+    let suppressNextClick = false;
+    let startClientY = 0;
+    let lastClientY = 0;
+    let lastMoveTimestamp = 0;
+    let startScrollY = 0;
+    let velocityPxPerMs = 0;
+
+    const getMaxScroll = () => {
+      if (lenis.limit > 0) return lenis.limit;
+      return Math.max(
+        0,
+        document.documentElement.scrollHeight - window.innerHeight
+      );
+    };
+
+    const clampScroll = (val: number) =>
+      Math.max(0, Math.min(getMaxScroll(), val));
+
+    const shouldIgnoreDragStart = (target: EventTarget | null): boolean => {
+      if (!(target instanceof Element)) return false;
+      // Do not hijack form controls, explicit no-drag elements, or 3D WebGL canvases
+      if (
+        target.closest(
+          'input, textarea, select, [contenteditable="true"], [data-no-drag-scroll], canvas:not(.gameplay-stage__canvas)'
+        )
+      ) {
+        return true;
+      }
+      return false;
+    };
+
+    const onMouseDown = (event: MouseEvent) => {
+      // Only primary (left) mouse button
+      if (event.button !== 0) return;
+      if (shouldIgnoreDragStart(event.target)) return;
+
+      isPointerDown = true;
+      isGrabDragging = false;
+      startClientY = event.clientY;
+      lastClientY = event.clientY;
+      lastMoveTimestamp = performance.now();
+      startScrollY = lenis.scroll ?? window.scrollY;
+      velocityPxPerMs = 0;
+    };
+
+    const onMouseMove = (event: MouseEvent) => {
+      if (!isPointerDown) return;
+
+      // If left button was released outside the window, end drag cleanly
+      if ((event.buttons & 1) === 0) {
+        onMouseUp();
+        return;
+      }
+
+      const now = performance.now();
+      const dt = Math.max(1, now - lastMoveTimestamp);
+      // Pulling upwards (event.clientY < startClientY) yields positive delta -> scrolls down
+      const totalDeltaY = startClientY - event.clientY;
+      const stepDeltaY = lastClientY - event.clientY;
+
+      lastClientY = event.clientY;
+      lastMoveTimestamp = now;
+
+      if (!isGrabDragging) {
+        if (Math.abs(totalDeltaY) < DRAG_ACTIVATION_THRESHOLD_PX) {
+          return;
+        }
+        isGrabDragging = true;
+        suppressNextClick = true;
+        document.documentElement.classList.add('is-grab-scrolling');
+      }
+
+      event.preventDefault();
+
+      const instVelocity = (stepDeltaY * DRAG_MULTIPLIER) / dt;
+      velocityPxPerMs = velocityPxPerMs * 0.65 + instVelocity * 0.35;
+
+      const nextTargetScroll = clampScroll(
+        startScrollY + totalDeltaY * DRAG_MULTIPLIER
+      );
+
+      if (prefersReducedMotion) {
+        window.scrollTo({ top: nextTargetScroll, behavior: 'auto' });
+      } else {
+        lenis.scrollTo(nextTargetScroll, {
+          immediate: false,
+          lerp: 0.24,
+        });
+      }
+    };
+
+    const onMouseUp = () => {
+      if (!isPointerDown) return;
+      const wasDragging = isGrabDragging;
+      isPointerDown = false;
+      isGrabDragging = false;
+      document.documentElement.classList.remove('is-grab-scrolling');
+
+      if (wasDragging && !prefersReducedMotion) {
+        const now = performance.now();
+        // Apply kinetic throw inertia if pointer was still moving on release
+        if (now - lastMoveTimestamp < 65 && Math.abs(velocityPxPerMs) > 0.08) {
+          const currentTarget =
+            startScrollY + (startClientY - lastClientY) * DRAG_MULTIPLIER;
+          const coastTarget = clampScroll(
+            currentTarget + velocityPxPerMs * INERTIA_THROW_MS
+          );
+          lenis.scrollTo(coastTarget, {
+            immediate: false,
+            lerp,
+          });
+        }
+      }
+
+      if (suppressNextClick) {
+        window.setTimeout(() => {
+          suppressNextClick = false;
+        }, 80);
+      }
+    };
+
+    const onCaptureClick = (event: MouseEvent) => {
+      if (suppressNextClick) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressNextClick = false;
+      }
+    };
+
+    const onDragStart = (event: DragEvent) => {
+      if (isPointerDown || isGrabDragging) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('mousedown', onMouseDown, { passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: false });
+    window.addEventListener('mouseup', onMouseUp, { passive: true });
+    window.addEventListener('blur', onMouseUp);
+    window.addEventListener('click', onCaptureClick, true);
+    window.addEventListener('dragstart', onDragStart);
+
     return () => {
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('blur', onMouseUp);
+      window.removeEventListener('click', onCaptureClick, true);
+      window.removeEventListener('dragstart', onDragStart);
+      document.documentElement.classList.remove('is-grab-scrolling');
+
       window.cancelAnimationFrame(rafId);
       lenis.off('scroll', handleScroll);
       lenis.destroy();
