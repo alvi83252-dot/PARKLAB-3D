@@ -57,6 +57,7 @@ import {
   useCrashFeedbackLoop,
   type PullUpRightTelemetryExtension,
 } from '../evaluation';
+import type { SavedAttemptReplay } from '../evaluation/attemptReplayStore';
 import {
   AICoachControlsBar,
   AttemptReplayModal,
@@ -628,7 +629,7 @@ export function SimulationScreen({
         maxAltitudeReachedRef.current = nextState.position[1];
       }
 
-      // Record trajectory frames so any attempt (completed, failed, or quit) can be replayed in 3D
+      // Record trajectory frames during active driving so any attempt can be replayed in 3D
       {
         const elapsedSec = Math.max(
           0,
@@ -805,8 +806,35 @@ export function SimulationScreen({
       );
       setDriverProfile(profile);
       setLastPointsBreakdown(breakdown);
-      const freeRoamFrames = [...replayFramesRef.current];
-      setCompletedReplayFrames(freeRoamFrames);
+
+      const freeRoamElapsedSec = Math.max(
+        0.5,
+        (performance.now() - attemptStartMsRef.current) / 1000
+      );
+      const freeRoamFinalFrames = [...replayFramesRef.current];
+      const lastRecordedFreeRoam =
+        freeRoamFinalFrames[freeRoamFinalFrames.length - 1];
+      const freeRoamEndSec = Math.max(
+        freeRoamElapsedSec,
+        lastRecordedFreeRoam ? lastRecordedFreeRoam.timeSec + 0.1 : 0.5
+      );
+      freeRoamFinalFrames.push({
+        timeSec: Number(freeRoamEndSec.toFixed(3)),
+        position: [
+          vehicleState.position[0],
+          vehicleState.position[1],
+          vehicleState.position[2],
+        ],
+        rotationY: vehicleState.rotationY,
+        speedMps: 0,
+        steeringAngle: vehicleState.steeringAngle,
+        isBraking: true,
+        isReversing: false,
+        isAirborne: false,
+        collisionCount: vehicleState.collisionCount,
+        damage: vehicleState.damage,
+      });
+      setCompletedReplayFrames(freeRoamFinalFrames);
       setIsReplaying(false);
       setEvaluationResult(result);
       crashLoop.recordEvaluationCompleted(
@@ -832,7 +860,7 @@ export function SimulationScreen({
     setDriverProfile(profile);
     setLastPointsBreakdown(breakdown);
 
-    // Save 3D action replay for every evaluated attempt (both passed and try-again)
+    // Save 3D action replay for every evaluated challenge attempt (pass or fail)
     const finalElapsedSec = Math.max(
       0.5,
       (performance.now() - attemptStartMsRef.current) / 1000
@@ -860,6 +888,7 @@ export function SimulationScreen({
       damage: vehicleState.damage,
     });
     setCompletedReplayFrames(finalFrames);
+    setIsReplaying(false);
 
     setEvaluationResult(result);
     crashLoop.recordEvaluationCompleted(
@@ -905,6 +934,33 @@ export function SimulationScreen({
     setIsReplayPlaying(true);
     setIsReplaying(true);
   }, [completedReplayFrames]);
+
+  const handleWatchSavedReplayIn3D = useCallback(
+    (savedReplay: SavedAttemptReplay) => {
+      if (!savedReplay.frames || savedReplay.frames.length === 0) {
+        return;
+      }
+      const convertedFrames: ReplayFrame[] = savedReplay.frames.map((f) => ({
+        timeSec: f.t,
+        position: [f.x, 0, f.z],
+        rotationY: f.rotY,
+        speedMps: (f.speedMph / 2.236936) * (f.rev ? -1 : 1),
+        steeringAngle: (f.steerDeg * Math.PI) / 180,
+        isBraking: f.brk,
+        isReversing: f.rev,
+        isAirborne: false,
+        collisionCount: savedReplay.collisionCount,
+      }));
+      crashLoop.closeReplayModal();
+      setShowCustomizationDrawer(false);
+      setCompletedReplayFrames(convertedFrames);
+      setReplayTimeSec(0);
+      setReplayPlaybackRate(1);
+      setIsReplayPlaying(true);
+      setIsReplaying(true);
+    },
+    [crashLoop]
+  );
 
   const handleExitReplay = useCallback(() => {
     setIsReplayPlaying(false);
@@ -1523,6 +1579,7 @@ export function SimulationScreen({
             allSavedReplays={crashLoop.savedReplays}
             onSelectReplay={(replay) => crashLoop.openReplayModal(replay)}
             onDeleteReplay={crashLoop.removeSavedReplay}
+            onWatchIn3D={handleWatchSavedReplayIn3D}
             onClose={crashLoop.closeReplayModal}
           />
         )}
@@ -1885,6 +1942,11 @@ export function SimulationScreen({
                 completedReplayFrames.length > 0 ||
                 replayFramesRef.current.length > 1
                   ? handleStartReplay
+                  : undefined
+              }
+              onOpenReplayTheatre={
+                crashLoop.savedReplays.length > 0
+                  ? () => crashLoop.openReplayModal()
                   : undefined
               }
             />
