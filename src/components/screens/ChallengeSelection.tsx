@@ -158,7 +158,10 @@ export function ChallengeSelection() {
       <ChallengeSelector
         challenges={CHALLENGES}
         selectedChallengeId={selectedChallengeId}
-        onSelect={(id) => setSelectedChallengeId(id)}
+        onSelect={(id) => {
+          setSelectedChallengeId(id);
+          handleLaunch(id);
+        }}
       />
 
       {/* Selected Challenge Launch Bar */}

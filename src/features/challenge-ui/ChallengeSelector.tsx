@@ -134,14 +134,14 @@ export function ChallengeSelector({
                 </div>
 
                 <span className="pk-challenge-card__cta">
-                  {isSelected ? (
+                  {compact && isSelected ? (
                     <>
                       <CheckCircle2 size={14} aria-hidden="true" />
                       <span>Active</span>
                     </>
                   ) : (
                     <>
-                      <span>Select</span>
+                      <span>{compact ? 'Select' : 'Start'}</span>
                       <ChevronRight size={14} aria-hidden="true" />
                     </>
                   )}
