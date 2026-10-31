@@ -17,11 +17,14 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, MeshBasicMaterial } from 'three';
+import { VehicleModel } from '../vehicles/VehicleModels';
 import type {
   ObstacleDefinition,
   ParkingChallengeDefinition,
   ParkingTarget,
   Vec3,
+  VehicleCategory,
+  VehicleDefinition,
 } from './types';
 
 export interface ChallengeSceneProps {
@@ -246,25 +249,46 @@ function PullUpRightStageGuide() {
   );
 }
 
+const PARKED_CAR_CATEGORIES: readonly VehicleCategory[] = [
+  'sedan',
+  'hatchback',
+  'suv',
+  'sports',
+] as const;
+
 interface ParkedCarObstacleProps {
   obstacle: ObstacleDefinition;
 }
 
 function ParkedCarObstacle({ obstacle }: ParkedCarObstacleProps) {
   const { position, rotationY, dimensions, id } = obstacle;
-  const { width, height, length } = dimensions;
-  const bodyColor = useMemo(() => getCarColorFromId(id), [id]);
+  const { width, length } = dimensions;
 
-  const wheelRadius = Math.min(0.34, height * 0.22);
-  const wheelThickness = Math.min(0.22, width * 0.12);
-  const chassisHeight = height * 0.46;
-  const chassisCenterY = wheelRadius * 0.65 + chassisHeight / 2;
-  const cabinHeight = height * 0.38;
-  const cabinLength = length * 0.52;
-  const cabinCenterY = chassisCenterY + chassisHeight / 2 + cabinHeight / 2 - 0.03;
+  const parkedVehicle = useMemo<VehicleDefinition>(() => {
+    let hash = 0;
+    for (let i = 0; i < id.length; i += 1) {
+      hash = (hash * 31 + id.charCodeAt(i)) | 0;
+    }
+    const absHash = Math.abs(hash);
+    const category =
+      PARKED_CAR_CATEGORIES[absHash % PARKED_CAR_CATEGORIES.length];
+    const bodyColor = getCarColorFromId(id);
 
-  const axleOffsetZ = length * 0.31;
-  const wheelOffsetX = width * 0.46;
+    return {
+      id: `parked-${id}`,
+      name: 'Parked Vehicle',
+      category,
+      dimensions,
+      handling: {
+        maxForwardSpeedMps: 0,
+        maxReverseSpeedMps: 0,
+        accelerationMps2: 0,
+        brakingMps2: 0,
+        steeringRate: 0,
+      },
+      bodyColor,
+    };
+  }, [dimensions, id]);
 
   return (
     <group
@@ -281,105 +305,8 @@ function ParkedCarObstacle({ obstacle }: ParkedCarObstacleProps) {
         <meshBasicMaterial color="#94a3b8" transparent opacity={0.35} />
       </mesh>
 
-      {/* Main lower chassis */}
-      <mesh position={[0, chassisCenterY, 0]} castShadow receiveShadow>
-        <boxGeometry args={[width, chassisHeight, length]} />
-        <meshStandardMaterial
-          color={bodyColor}
-          metalness={0.45}
-          roughness={0.35}
-        />
-      </mesh>
-
-      {/* Cabin / greenhouse */}
-      <mesh position={[0, cabinCenterY, length * 0.04]} castShadow receiveShadow>
-        <boxGeometry args={[width * 0.84, cabinHeight, cabinLength]} />
-        <meshStandardMaterial
-          color={bodyColor}
-          metalness={0.4}
-          roughness={0.35}
-        />
-      </mesh>
-
-      {/* Tinted windshield & window band */}
-      <mesh position={[0, cabinCenterY, length * 0.04]}>
-        <boxGeometry
-          args={[width * 0.86, cabinHeight * 0.72, cabinLength * 0.88]}
-        />
-        <meshStandardMaterial
-          color="#0f172a"
-          metalness={0.75}
-          roughness={0.18}
-        />
-      </mesh>
-
-      {/* Front bumper (-Z) */}
-      <mesh
-        position={[0, wheelRadius * 0.75, -length * 0.49]}
-        castShadow
-        receiveShadow
-      >
-        <boxGeometry args={[width * 0.96, chassisHeight * 0.42, 0.12]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.6} />
-      </mesh>
-
-      {/* Rear bumper (+Z) */}
-      <mesh
-        position={[0, wheelRadius * 0.75, length * 0.49]}
-        castShadow
-        receiveShadow
-      >
-        <boxGeometry args={[width * 0.96, chassisHeight * 0.42, 0.12]} />
-        <meshStandardMaterial color="#1e293b" roughness={0.6} />
-      </mesh>
-
-      {/* Front headlights (-Z) */}
-      {[-1, 1].map((side) => (
-        <mesh
-          key={`headlight-${side}`}
-          position={[side * width * 0.34, chassisCenterY + 0.04, -length * 0.501]}
-        >
-          <boxGeometry args={[width * 0.18, 0.11, 0.03]} />
-          <meshStandardMaterial
-            color="#f8fafc"
-            emissive="#e2e8f0"
-            emissiveIntensity={0.5}
-          />
-        </mesh>
-      ))}
-
-      {/* Rear taillights (+Z) */}
-      {[-1, 1].map((side) => (
-        <mesh
-          key={`taillight-${side}`}
-          position={[side * width * 0.34, chassisCenterY + 0.04, length * 0.501]}
-        >
-          <boxGeometry args={[width * 0.2, 0.11, 0.03]} />
-          <meshStandardMaterial
-            color="#ef4444"
-            emissive="#dc2626"
-            emissiveIntensity={0.55}
-          />
-        </mesh>
-      ))}
-
-      {/* Four wheels */}
-      {[
-        [-wheelOffsetX, -axleOffsetZ],
-        [wheelOffsetX, -axleOffsetZ],
-        [-wheelOffsetX, axleOffsetZ],
-        [wheelOffsetX, axleOffsetZ],
-      ].map(([wx, wz], idx) => (
-        <mesh
-          key={`wheel-${idx}`}
-          position={[wx, wheelRadius, wz]}
-          rotation={[0, 0, Math.PI / 2]}
-          castShadow
-        >
-          <cylinderGeometry args={[wheelRadius, wheelRadius, wheelThickness, 16]} />
-          <meshStandardMaterial color="#111827" roughness={0.8} />
-        </mesh>
-      ))}
+      {/* High-detail procedural 3D vehicle model (Sedan, Hatchback, SUV, or Flying Tesla Roadster) matching obstacle dimensions */}
+      <VehicleModel vehicle={parkedVehicle} />
     </group>
   );
 }
