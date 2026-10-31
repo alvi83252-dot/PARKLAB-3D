@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Award,
+  Film,
   History,
   RotateCcw,
   Sparkles,
@@ -40,6 +41,8 @@ export interface ResultsPanelProps {
   recentCrashReport?: AICrashFeedbackReport | null;
   /** Controlled callback to retry the current challenge */
   onRetry: () => void;
+  /** Optional callback to watch the recorded replay of this attempt */
+  onWatchReplay?: () => void;
   /** Controlled callback to advance to the next challenge */
   onNextChallenge?: () => void;
   /** Alias for onNextChallenge for flexible integration */
@@ -52,6 +55,7 @@ export function ResultsPanel({
   attemptComparison,
   recentCrashReport,
   onRetry,
+  onWatchReplay,
   onNextChallenge,
   onNext,
 }: ResultsPanelProps) {
@@ -236,6 +240,17 @@ export function ResultsPanel({
 
       {/* Controlled Action Buttons */}
       <footer className="pk-results__actions">
+        {onWatchReplay && (
+          <button
+            type="button"
+            className="pk-btn pk-btn--secondary"
+            onClick={onWatchReplay}
+          >
+            <Film size={14} aria-hidden="true" />
+            <span>Watch Attempt Replay</span>
+          </button>
+        )}
+
         <button
           type="button"
           className="pk-btn pk-btn--secondary"

@@ -45,9 +45,22 @@ import {
   saveCrashMemoryRecord,
 } from './ragMemoryStore';
 import {
+  clearAllSavedReplays,
+  createReplayKeyframe,
+  deleteSavedReplay,
+  loadSavedReplays,
+  saveAttemptReplay,
+  type ReplayKeyframe,
+  type SavedAttemptReplay,
+} from './attemptReplayStore';
+import {
   useVoiceCoach,
   type VoiceCoachStateAndControls,
 } from './useVoiceCoach';
+import {
+  useChallengeSoundtrack,
+  type ChallengeSoundtrackControls,
+} from './useChallengeSoundtrack';
 import {
   useWebcamFacialObserver,
   type WebcamFacialObserverControls,
@@ -70,8 +83,15 @@ export interface CrashFeedbackLoopController {
   totalStoredCrashes: number;
   totalStoredAttempts: number;
   latestQAExchange: CoachQAExchange | null;
+  savedReplays: SavedAttemptReplay[];
+  latestAttemptReplay: SavedAttemptReplay | null;
+  activeReplayToWatch: SavedAttemptReplay | null;
   voiceCoach: VoiceCoachStateAndControls;
+  soundtrack: ChallengeSoundtrackControls;
   webcamObserver: WebcamFacialObserverControls;
+  openReplayModal: (replay?: SavedAttemptReplay) => void;
+  closeReplayModal: () => void;
+  removeSavedReplay: (replayId: string) => void;
   recordTelemetryFrame: (
     state: VehicleRuntimeState,
     elapsedSeconds: number
@@ -105,6 +125,10 @@ export function useCrashFeedbackLoop({
   vehicle,
 }: UseCrashFeedbackLoopParams): CrashFeedbackLoopController {
   const voiceCoach = useVoiceCoach();
+  const soundtrack = useChallengeSoundtrack({
+    challengeId: challenge.id,
+    isVoiceSpeaking: voiceCoach.isSpeaking,
+  });
   const webcamObserver = useWebcamFacialObserver();
 
   const [memoryStore, setMemoryStore] = useState<RAGMemoryStorePayload>(() =>
@@ -125,9 +149,18 @@ export function useCrashFeedbackLoop({
     useState<AttemptComparisonDelta | null>(null);
   const [latestQAExchange, setLatestQAExchange] =
     useState<CoachQAExchange | null>(null);
+  const [savedReplays, setSavedReplays] = useState<SavedAttemptReplay[]>(() =>
+    loadSavedReplays()
+  );
+  const [latestAttemptReplay, setLatestAttemptReplay] =
+    useState<SavedAttemptReplay | null>(null);
+  const [activeReplayToWatch, setActiveReplayToWatch] =
+    useState<SavedAttemptReplay | null>(null);
 
   // Rolling 60-frame telemetry ring buffer & attempt accumulators in refs
   const rollingFramesRef = useRef<TelemetryFrameSnapshot[]>([]);
+  const replayKeyframesRef = useRef<ReplayKeyframe[]>([]);
+  const lastKeyframeTimeMsRef = useRef<number>(0);
   const activeAttemptIdRef = useRef<string>(
     `att-${challenge.id}-${currentAttemptNumber}-${Date.now()}`
   );
@@ -152,6 +185,18 @@ export function useCrashFeedbackLoop({
   const resetActiveAttemptRefs = useCallback(
     (nextAttemptNumber: number) => {
       rollingFramesRef.current = [];
+      replayKeyframesRef.current = [
+        createReplayKeyframe({
+          elapsedSeconds: 0,
+          position: challenge.spawnPosition,
+          rotationY: challenge.spawnRotationY,
+          speedMph: 0,
+          steeringDeg: 0,
+          isReversing: false,
+          isBraking: false,
+        }),
+      ];
+      lastKeyframeTimeMsRef.current = 0;
       activeAttemptIdRef.current = `att-${challenge.id}-${nextAttemptNumber}-${Date.now()}`;
       lastPositionRef.current = [...challenge.spawnPosition];
       distanceTraveledRef.current = 0;
@@ -225,6 +270,22 @@ export function useCrashFeedbackLoop({
         buffer.shift();
       }
       buffer.push(snapshot);
+
+      // Record replay keyframe at ~10 Hz (every >= 95ms)
+      if (nowMs - lastKeyframeTimeMsRef.current >= 95) {
+        lastKeyframeTimeMsRef.current = nowMs;
+        replayKeyframesRef.current.push(
+          createReplayKeyframe({
+            elapsedSeconds,
+            position: state.position,
+            rotationY: state.rotationY,
+            speedMph: absMph,
+            steeringDeg: (state.steeringAngle * 180) / Math.PI,
+            isReversing: snapshot.isReversing,
+            isBraking: snapshot.isBraking,
+          })
+        );
+      }
     },
     [challenge.parkingTarget.position]
   );
@@ -400,9 +461,56 @@ export function useCrashFeedbackLoop({
       setMemoryStore(updatedStore);
       setAttemptComparison(comparison);
 
+      // Save full attempt replay to general replay storage
+      const replayOutcome: SavedAttemptReplay['outcome'] = evalResult
+        ? evalResult.passed
+          ? 'passed'
+          : 'try-again'
+        : 'quit-or-retried';
+
+      const replayToSave: SavedAttemptReplay = {
+        replayId: `replay-${activeAttemptIdRef.current}`,
+        attemptNumber: attemptNum,
+        challengeId: challenge.id,
+        challengeTitle: challenge.title,
+        vehicleId: vehicle.id,
+        vehicleName: vehicle.name,
+        vehicleColor: vehicle.bodyColor,
+        vehicleDimensions: { ...vehicle.dimensions },
+        parkingTarget: {
+          position: [...challenge.parkingTarget.position],
+          rotationY: challenge.parkingTarget.rotationY,
+          width: challenge.parkingTarget.width,
+          length: challenge.parkingTarget.length,
+        },
+        obstacles: challenge.obstacles.map((o) => ({
+          ...o,
+          position: [...o.position],
+          dimensions: { ...o.dimensions },
+        })),
+        savedAtIso: new Date().toISOString(),
+        outcome: replayOutcome,
+        score: evalResult ? evalResult.score : null,
+        stars: evalResult ? evalResult.stars : null,
+        collisionCount: effectiveCollisions,
+        durationSeconds: Math.max(0.5, Math.round(elapsedSeconds * 10) / 10),
+        frames: [...replayKeyframesRef.current],
+        crashMarkers: crashes.map((c) => ({
+          t: c.elapsedSeconds,
+          x: c.impactPosition[0],
+          z: c.impactPosition[2],
+          obstacleId: c.obstacle.id,
+          obstacleLabel: c.obstacleReadableLabel.split('(')[0].trim(),
+        })),
+      };
+
+      const updatedReplays = saveAttemptReplay(replayToSave);
+      setSavedReplays(updatedReplays);
+      setLatestAttemptReplay(replayToSave);
+
       return comparison;
     },
-    [attemptComparison, challenge.id, vehicle.id, vehicle.name]
+    [attemptComparison, challenge, vehicle]
   );
 
   const recordEvaluationCompleted = useCallback(
@@ -483,9 +591,34 @@ export function useCrashFeedbackLoop({
     [challenge, vehicle, latestCrashEvent, activeCrashReport, voiceCoach]
   );
 
+  const openReplayModal = useCallback(
+    (replay?: SavedAttemptReplay) => {
+      const target =
+        replay ?? latestAttemptReplay ?? savedReplays[0] ?? null;
+      setActiveReplayToWatch(target);
+    },
+    [latestAttemptReplay, savedReplays]
+  );
+
+  const closeReplayModal = useCallback(() => {
+    setActiveReplayToWatch(null);
+  }, []);
+
+  const removeSavedReplay = useCallback((replayId: string) => {
+    const next = deleteSavedReplay(replayId);
+    setSavedReplays(next);
+    setActiveReplayToWatch((prev) =>
+      prev && prev.replayId === replayId ? next[0] ?? null : prev
+    );
+  }, []);
+
   const resetRAGMemory = useCallback(() => {
     const empty = clearRAGMemoryStore();
+    clearAllSavedReplays();
     setMemoryStore(empty);
+    setSavedReplays([]);
+    setLatestAttemptReplay(null);
+    setActiveReplayToWatch(null);
     resetActiveAttemptRefs(1);
     setActiveCrashReport(null);
     setLatestCrashEvent(null);
@@ -503,8 +636,15 @@ export function useCrashFeedbackLoop({
     totalStoredCrashes: memoryStore.crashes.length,
     totalStoredAttempts: memoryStore.attempts.length,
     latestQAExchange,
+    savedReplays,
+    latestAttemptReplay,
+    activeReplayToWatch,
     voiceCoach,
+    soundtrack,
     webcamObserver,
+    openReplayModal,
+    closeReplayModal,
+    removeSavedReplay,
     recordTelemetryFrame,
     recordCollision,
     recordEvaluationCompleted,

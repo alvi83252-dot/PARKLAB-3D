@@ -49,6 +49,7 @@ import {
 } from '../evaluation';
 import {
   AICoachControlsBar,
+  AttemptReplayModal,
   ChallengeSelector,
   ChallengeHUD,
   ResultsPanel,
@@ -221,6 +222,10 @@ export function SimulationScreen() {
 
   const handleSelectVehicle = useCallback(
     (vehicleId: string) => {
+      crashLoop.finalizeAttemptForRetry(
+        latestMetricsRef.current.elapsedSeconds,
+        latestMetricsRef.current.corrections
+      );
       setSelectedVehicleId(vehicleId);
       setSearchParams(
         (prev) => {
@@ -239,6 +244,7 @@ export function SimulationScreen() {
     [
       activeChallenge.spawnPosition,
       activeChallenge.spawnRotationY,
+      crashLoop,
       resetAttemptState,
       selectedChallengeId,
       setSearchParams,
@@ -247,6 +253,10 @@ export function SimulationScreen() {
 
   const handleSelectChallenge = useCallback(
     (challengeId: ChallengeId) => {
+      crashLoop.finalizeAttemptForRetry(
+        latestMetricsRef.current.elapsedSeconds,
+        latestMetricsRef.current.corrections
+      );
       const nextChallenge = getChallengeById(challengeId);
       setSelectedChallengeId(challengeId);
       setSearchParams(
@@ -263,7 +273,7 @@ export function SimulationScreen() {
         nextChallenge.spawnRotationY
       );
     },
-    [resetAttemptState, selectedVehicleId, setSearchParams]
+    [crashLoop, resetAttemptState, selectedVehicleId, setSearchParams]
   );
 
   const handleResetAttempt = useCallback(() => {
@@ -753,6 +763,7 @@ export function SimulationScreen() {
               attemptComparison={crashLoop.attemptComparison}
               recentCrashReport={crashLoop.activeCrashReport}
               onRetry={handleResetAttempt}
+              onWatchReplay={() => crashLoop.openReplayModal()}
               onNextChallenge={handleNextChallenge}
             />
           </div>
@@ -764,13 +775,27 @@ export function SimulationScreen() {
         attemptNumber={crashLoop.attemptNumber}
         totalStoredCrashes={crashLoop.totalStoredCrashes}
         totalStoredAttempts={crashLoop.totalStoredAttempts}
+        savedReplaysCount={crashLoop.savedReplays.length}
         voiceCoach={crashLoop.voiceCoach}
+        soundtrack={crashLoop.soundtrack}
         webcamObserver={crashLoop.webcamObserver}
         latestQAExchange={crashLoop.latestQAExchange}
         attemptComparison={crashLoop.attemptComparison}
         onAskCoach={crashLoop.askCoach}
+        onOpenReplays={() => crashLoop.openReplayModal()}
         onResetMemory={crashLoop.resetRAGMemory}
       />
+
+      {/* Interactive Attempt Replay Theatre Modal */}
+      {crashLoop.activeReplayToWatch && (
+        <AttemptReplayModal
+          activeReplay={crashLoop.activeReplayToWatch}
+          allSavedReplays={crashLoop.savedReplays}
+          onSelectReplay={(replay) => crashLoop.openReplayModal(replay)}
+          onDeleteReplay={crashLoop.removeSavedReplay}
+          onClose={crashLoop.closeReplayModal}
+        />
+      )}
 
       {/* Integrated Challenge, Vehicle & Customization Selection Trays */}
       {showSelectorsPanel && (

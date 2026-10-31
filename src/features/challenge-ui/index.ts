@@ -15,3 +15,6 @@ export type {
   AICoachControlsBarProps,
   CrashFeedbackPanelProps,
 } from './CrashFeedbackPanel';
+
+export { AttemptReplayModal } from './AttemptReplayModal';
+export type { AttemptReplayModalProps } from './AttemptReplayModal';

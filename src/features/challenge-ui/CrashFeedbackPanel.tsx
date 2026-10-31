@@ -21,10 +21,12 @@ import {
   ChevronDown,
   ChevronUp,
   Database,
+  Film,
   History,
   MessageSquare,
   Mic,
   MicOff,
+  Music,
   RotateCcw,
   Send,
   Sparkles,
@@ -40,6 +42,7 @@ import type {
   CoachQAExchange,
 } from '../evaluation/crashRagTypes';
 import type { VoiceCoachStateAndControls } from '../evaluation/useVoiceCoach';
+import type { ChallengeSoundtrackControls } from '../evaluation/useChallengeSoundtrack';
 import type { WebcamFacialObserverControls } from '../evaluation/useWebcamFacialObserver';
 import './challenge-ui.css';
 
@@ -274,7 +277,9 @@ export interface AICoachControlsBarProps {
   attemptNumber: number;
   totalStoredCrashes: number;
   totalStoredAttempts: number;
+  savedReplaysCount?: number;
   voiceCoach: VoiceCoachStateAndControls;
+  soundtrack?: ChallengeSoundtrackControls;
   webcamObserver: WebcamFacialObserverControls;
   latestQAExchange: CoachQAExchange | null;
   attemptComparison: AttemptComparisonDelta | null;
@@ -282,6 +287,7 @@ export interface AICoachControlsBarProps {
     questionText: string,
     inputMode?: 'voice-speech-recognition' | 'text-input'
   ) => void;
+  onOpenReplays?: () => void;
   onResetMemory: () => void;
 }
 
@@ -295,11 +301,14 @@ export function AICoachControlsBar({
   attemptNumber,
   totalStoredCrashes,
   totalStoredAttempts,
+  savedReplaysCount = 0,
   voiceCoach,
+  soundtrack,
   webcamObserver,
   latestQAExchange,
   attemptComparison,
   onAskCoach,
+  onOpenReplays,
   onResetMemory,
 }: AICoachControlsBarProps) {
   const [questionInput, setQuestionInput] = useState<string>('');
@@ -379,6 +388,39 @@ export function AICoachControlsBar({
 
         {/* Right: Voice, Webcam, Ask Coach & Memory Reset Buttons */}
         <div className="pk-coach-bar__controls-cluster">
+          {/* 0. Challenge Background Music Toggle */}
+          {soundtrack && (
+            <button
+              type="button"
+              className={`pk-btn ${
+                soundtrack.musicEnabled
+                  ? 'pk-btn--primary'
+                  : 'pk-btn--secondary'
+              }`}
+              onClick={soundtrack.toggleMusic}
+              title={`${soundtrack.activeTrack.trackTitle} (${soundtrack.activeTrack.genreLabel})`}
+            >
+              <Music size={13} aria-hidden="true" />
+              <span>
+                Music: {soundtrack.musicEnabled ? soundtrack.activeTrack.trackTitle : 'Off'}
+              </span>
+            </button>
+          )}
+
+          {/* 0b. Watch Saved Replays Button */}
+          {onOpenReplays && (
+            <button
+              type="button"
+              className="pk-btn pk-btn--secondary"
+              onClick={onOpenReplays}
+              disabled={savedReplaysCount === 0}
+              title="Watch saved replays of completed or retried attempts"
+            >
+              <Film size={13} aria-hidden="true" />
+              <span>Replays ({savedReplaysCount})</span>
+            </button>
+          )}
+
           {/* 1. Voice Coach Enable / Disable */}
           <button
             type="button"
@@ -539,8 +581,28 @@ export function AICoachControlsBar({
             />
           </div>
 
+          {soundtrack && (
+            <div className="pk-coach-bar__slider-group">
+              <label htmlFor="pk-music-volume">
+                Music Vol: {Math.round(soundtrack.musicVolume * 100)}%
+              </label>
+              <input
+                id="pk-music-volume"
+                type="range"
+                min={0.05}
+                max={1}
+                step={0.05}
+                value={soundtrack.musicVolume}
+                onChange={(e) =>
+                  soundtrack.setMusicVolume(Number(e.target.value))
+                }
+              />
+            </div>
+          )}
+
           <span className="pk-coach-bar__voice-meta">
             Voice: {voiceCoach.activeVoiceLabel}
+            {soundtrack ? ` · Track: ${soundtrack.activeTrack.genreLabel}` : ''}
           </span>
         </div>
       )}

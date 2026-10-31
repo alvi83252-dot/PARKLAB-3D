@@ -50,6 +50,29 @@ export {
 export { useVoiceCoach } from './useVoiceCoach';
 export type { VoiceCoachStateAndControls } from './useVoiceCoach';
 
+export {
+  CHALLENGE_SOUNDTRACKS,
+  useChallengeSoundtrack,
+} from './useChallengeSoundtrack';
+export type {
+  ChallengeSoundtrackControls,
+  ChallengeSoundtrackProfile,
+} from './useChallengeSoundtrack';
+
+export {
+  REPLAY_STORAGE_KEY,
+  clearAllSavedReplays,
+  createReplayKeyframe,
+  deleteSavedReplay,
+  loadSavedReplays,
+  saveAttemptReplay,
+} from './attemptReplayStore';
+export type {
+  ReplayCrashMarker,
+  ReplayKeyframe,
+  SavedAttemptReplay,
+} from './attemptReplayStore';
+
 export { useWebcamFacialObserver } from './useWebcamFacialObserver';
 export type { WebcamFacialObserverControls } from './useWebcamFacialObserver';
 
