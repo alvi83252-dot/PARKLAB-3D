@@ -60,40 +60,48 @@ export function CrashFeedbackPanel({
   onReplayVoice,
   onStopVoice,
 }: CrashFeedbackPanelProps) {
-  const [showRagSources, setShowRagSources] = useState<boolean>(true);
+  const [showRagSources, setShowRagSources] = useState<boolean>(false);
 
   const directionBadge =
     report.drivingDirection === 'reverse'
-      ? 'REVERSE'
+      ? 'REV'
       : report.drivingDirection === 'forward'
-        ? 'FORWARD'
-        : 'LOW SPEED';
+        ? 'FWD'
+        : 'STOP';
 
   const impactCornerFormatted =
     report.vehicleImpactZone === 'uncertain'
-      ? 'Chassis Boundary'
-      : report.vehicleImpactZone.replace(/-/g, ' ');
+      ? 'Body'
+      : report.vehicleImpactZone.replace(/-corner/g, '').replace(/-/g, ' ');
+
+  const shortObstacle = report.obstacleLabel.split('(')[0].trim();
+  const topSimilarity = report.retrievedContext[0]
+    ? Math.round(report.retrievedContext[0].similarityScore * 100)
+    : null;
 
   return (
     <section
       className="pk-crash-coach"
-       role="region"
+      role="region"
       aria-labelledby="pk-crash-coach-heading"
     >
-      {/* Header Banner */}
+      {/* Compact Header */}
       <header className="pk-crash-coach__header">
         <div className="pk-crash-coach__badge-row">
-          <span className="pk-crash-coach__alert-pill">
-            <AlertOctagon size={13} aria-hidden="true" />
-            <span>CRASH DETECTED</span>
+          <span
+            id="pk-crash-coach-heading"
+            className="pk-crash-coach__alert-pill"
+          >
+            <AlertOctagon size={12} aria-hidden="true" />
+            <span>CRASH · {shortObstacle}</span>
           </span>
           <span className="pk-crash-coach__attempt-tag">
-            Attempt #{report.attemptNumber} · {report.challengeTitle}
+            #{report.attemptNumber}
           </span>
           {isSpeaking && (
             <span className="pk-crash-coach__speaking-pill" aria-live="polite">
-              <Volume2 size={12} aria-hidden="true" />
-              <span>Coach Speaking...</span>
+              <Volume2 size={11} aria-hidden="true" />
+              <span>Voice</span>
             </span>
           )}
         </div>
@@ -102,105 +110,71 @@ export function CrashFeedbackPanel({
           type="button"
           className="pk-crash-coach__close-btn"
           onClick={onDismiss}
-          title="Dismiss coaching panel and keep driving"
+          title="Dismiss"
           aria-label="Dismiss crash coaching panel"
         >
-          <X size={15} aria-hidden="true" />
+          <X size={14} aria-hidden="true" />
         </button>
       </header>
 
-      {/* Telemetry Evidence Strip */}
+      {/* 3-Chip Key Telemetry Strip */}
       <div className="pk-crash-coach__telemetry-strip">
         <div className="pk-crash-coach__telemetry-cell">
-          <span className="pk-crash-coach__telemetry-label">Obstacle Hit</span>
+          <span className="pk-crash-coach__telemetry-label">Speed / Gear</span>
           <span className="pk-crash-coach__telemetry-val">
-            {report.obstacleLabel.split('(')[0].trim()}
+            {report.preImpactSpeedMph.toFixed(1)} mph · {directionBadge}
           </span>
         </div>
         <div className="pk-crash-coach__telemetry-cell">
-          <span className="pk-crash-coach__telemetry-label">
-            Pre-Impact Speed
-          </span>
-          <span className="pk-crash-coach__telemetry-val">
-            {report.preImpactSpeedMph.toFixed(1)} mph ({directionBadge})
-          </span>
-        </div>
-        <div className="pk-crash-coach__telemetry-cell">
-          <span className="pk-crash-coach__telemetry-label">Impact Zone</span>
+          <span className="pk-crash-coach__telemetry-label">Impact</span>
           <span className="pk-crash-coach__telemetry-val">
             {impactCornerFormatted}
           </span>
         </div>
         <div className="pk-crash-coach__telemetry-cell">
-          <span className="pk-crash-coach__telemetry-label">Steering Lock</span>
+          <span className="pk-crash-coach__telemetry-label">Steer</span>
           <span className="pk-crash-coach__telemetry-val">
             {report.steeringDirection === 'straight'
-              ? '0.0° Straight'
-              : `${report.preImpactSteeringDeg.toFixed(1)}° ${report.steeringDirection.toUpperCase()}`}
+              ? '0°'
+              : `${report.preImpactSteeringDeg.toFixed(0)}° ${report.steeringDirection.toUpperCase()}`}
           </span>
         </div>
       </div>
 
-      {/* Diagnostic Observation & Probable Cause */}
+      {/* Concise 2-Line Cause + Fix */}
       <div className="pk-crash-coach__body">
-        <div className="pk-crash-coach__section">
-          <span className="pk-crash-coach__section-label">
-            Observation &amp; Pre-Impact Kinematics
-          </span>
-          <p className="pk-crash-coach__text">{report.whatHappened}</p>
-          <p className="pk-crash-coach__subtext">{report.preCrashBehavior}</p>
-        </div>
+        <p className="pk-crash-coach__text">
+          <strong>Cause:</strong> {report.probableCause}
+        </p>
 
-        <div className="pk-crash-coach__section">
-          <span className="pk-crash-coach__section-label">Probable Cause</span>
-          <p className="pk-crash-coach__text">{report.probableCause}</p>
-          {report.uncertaintyNote && (
-            <p className="pk-crash-coach__uncertainty">
-              {report.uncertaintyNote}
-            </p>
-          )}
+        <div className="pk-crash-coach__advice-box">
+          <div className="pk-crash-coach__focus-row">
+            <Sparkles
+              size={12}
+              aria-hidden="true"
+              style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }}
+            />
+            <strong>Fix:</strong> {report.nextAttemptFocus}
+          </div>
         </div>
 
         {report.repeatPatternNotice && (
           <div className="pk-crash-coach__repeat-banner">
-            <History size={14} aria-hidden="true" />
+            <History size={12} aria-hidden="true" />
             <span>{report.repeatPatternNotice}</span>
           </div>
         )}
 
-        <div className="pk-crash-coach__advice-box">
-          <div className="pk-crash-coach__advice-header">
-            <Sparkles size={13} aria-hidden="true" />
-            <span>RAG-Grounded Coaching Recommendation</span>
-          </div>
-          <p className="pk-crash-coach__advice-text">
-            &ldquo;{report.actionableAdvice}&rdquo;
-          </p>
-          <div className="pk-crash-coach__focus-row">
-            <strong>Next Attempt Focus:</strong> {report.nextAttemptFocus}
-          </div>
-          {report.facialCueContextNote && (
-            <div className="pk-crash-coach__cue-note">
-              {report.facialCueContextNote}
+        {report.attemptComparison &&
+          report.attemptComparison.bulletPoints.length > 0 && (
+            <div className="pk-crash-coach__comparison">
+              <span className="pk-crash-coach__subtext">
+                {report.attemptComparison.bulletPoints[0]}
+              </span>
             </div>
           )}
-        </div>
 
-        {/* Attempt-to-Attempt Comparison Box */}
-        {report.attemptComparison && (
-          <div className="pk-crash-coach__comparison">
-            <span className="pk-crash-coach__section-label">
-              {report.attemptComparison.headline}
-            </span>
-            <ul className="pk-crash-coach__comparison-list">
-              {report.attemptComparison.bulletPoints.map((pt, idx) => (
-                <li key={`cmp-${idx}`}>{pt}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Retrieved RAG Context Drawer */}
+        {/* Collapsed-by-default RAG Sources toggle */}
         <div className="pk-crash-coach__rag-drawer">
           <button
             type="button"
@@ -209,15 +183,16 @@ export function CrashFeedbackPanel({
             aria-expanded={showRagSources}
           >
             <span className="pk-crash-coach__rag-toggle-left">
-              <BookOpen size={12} aria-hidden="true" />
+              <BookOpen size={11} aria-hidden="true" />
               <span>
-                Retrieved RAG Context ({report.retrievedContext.length} sources)
+                RAG Context ({report.retrievedContext.length})
+                {topSimilarity ? ` · ${topSimilarity}% match` : ''}
               </span>
             </span>
             {showRagSources ? (
-              <ChevronUp size={13} aria-hidden="true" />
+              <ChevronUp size={12} aria-hidden="true" />
             ) : (
-              <ChevronDown size={13} aria-hidden="true" />
+              <ChevronDown size={12} aria-hidden="true" />
             )}
           </button>
 
@@ -228,19 +203,18 @@ export function CrashFeedbackPanel({
                   <div className="pk-crash-coach__rag-item-top">
                     <span className="pk-crash-coach__rag-source-badge">
                       {item.sourceType === 'static-guidance'
-                        ? 'Guidance KB'
+                        ? 'KB'
                         : item.sourceType === 'past-crash'
-                          ? 'Crash Memory'
-                          : 'Attempt Log'}
+                          ? 'Memory'
+                          : 'Attempt'}
                     </span>
                     <span className="pk-crash-coach__rag-title">
                       {item.title}
                     </span>
                     <span className="pk-crash-coach__rag-score">
-                      {Math.round(item.similarityScore * 100)}% match
+                      {Math.round(item.similarityScore * 100)}%
                     </span>
                   </div>
-                  <p className="pk-crash-coach__rag-summary">{item.summary}</p>
                 </li>
               ))}
             </ul>
@@ -256,10 +230,10 @@ export function CrashFeedbackPanel({
               type="button"
               className="pk-btn pk-btn--secondary"
               onClick={onReplayVoice}
-              title="Replay spoken feedback aloud"
+              title="Replay voice tip"
             >
-              <Volume2 size={13} aria-hidden="true" />
-              <span>Replay Voice</span>
+              <Volume2 size={12} aria-hidden="true" />
+              <span>Replay</span>
             </button>
           )}
           {onStopVoice && isSpeaking && (
@@ -269,8 +243,7 @@ export function CrashFeedbackPanel({
               onClick={onStopVoice}
               title="Stop speaking"
             >
-              <Square size={12} aria-hidden="true" />
-              <span>Stop</span>
+              <Square size={11} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -281,15 +254,15 @@ export function CrashFeedbackPanel({
             className="pk-btn pk-btn--secondary"
             onClick={onDismiss}
           >
-            <span>Keep Driving</span>
+            <span>Dismiss</span>
           </button>
           <button
             type="button"
             className="pk-btn pk-btn--primary"
             onClick={onRetry}
           >
-            <RotateCcw size={13} aria-hidden="true" />
-            <span>Retry Attempt</span>
+            <RotateCcw size={12} aria-hidden="true" />
+            <span>Retry</span>
           </button>
         </div>
       </footer>

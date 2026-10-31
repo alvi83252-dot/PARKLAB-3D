@@ -518,52 +518,47 @@ export function compareAttemptTelemetry(params: {
 
   if (collisionDelta < 0) {
     bulletPoints.push(
-      `Collisions reduced from ${prev.collisionCount} (Attempt #${prev.attemptNumber}) to ${currentCollisions} on Attempt #${currentAttemptNumber}.`
+      `Collisions: ${prev.collisionCount} → ${currentCollisions} (Improved)`
     );
   } else if (collisionDelta > 0) {
     bulletPoints.push(
-      `Collisions increased from ${prev.collisionCount} (Attempt #${prev.attemptNumber}) to ${currentCollisions} on Attempt #${currentAttemptNumber}.`
-    );
-  } else {
-    bulletPoints.push(
-      `Collision count unchanged (${currentCollisions}) compared with Attempt #${prev.attemptNumber}.`
+      `Collisions: ${prev.collisionCount} → ${currentCollisions}`
     );
   }
 
   if (repeatedSameObstacle && repeatedObstacleLabel) {
     bulletPoints.push(
-      `Repeated contact with ${repeatedObstacleLabel} (also hit on Attempt #${prev.attemptNumber}).`
+      `Repeat hit: ${repeatedObstacleLabel.split('(')[0].trim()} (also Attempt #${prev.attemptNumber})`
     );
   }
 
-  if (speedBeforeImpactDeltaMph !== null && prev.avgPreImpactSpeedMph !== null && currentPreImpactSpeedMph !== null) {
-    if (speedBeforeImpactDeltaMph <= -0.4) {
-      bulletPoints.push(
-        `Pre-impact approach speed reduced from ${prev.avgPreImpactSpeedMph.toFixed(1)} mph to ${currentPreImpactSpeedMph.toFixed(1)} mph (${Math.abs(speedBeforeImpactDeltaMph).toFixed(1)} mph slower).`
-      );
-    } else if (speedBeforeImpactDeltaMph >= 0.4) {
-      bulletPoints.push(
-        `Pre-impact approach speed rose from ${prev.avgPreImpactSpeedMph.toFixed(1)} mph to ${currentPreImpactSpeedMph.toFixed(1)} mph (+${speedBeforeImpactDeltaMph.toFixed(1)} mph faster).`
-      );
-    }
+  if (
+    speedBeforeImpactDeltaMph !== null &&
+    prev.avgPreImpactSpeedMph !== null &&
+    currentPreImpactSpeedMph !== null &&
+    Math.abs(speedBeforeImpactDeltaMph) >= 0.4
+  ) {
+    bulletPoints.push(
+      `Impact speed: ${prev.avgPreImpactSpeedMph.toFixed(1)} → ${currentPreImpactSpeedMph.toFixed(1)} mph`
+    );
   }
 
   if (distanceToBayDeltaMeters <= -0.25) {
     bulletPoints.push(
-      `Progressed ${Math.abs(distanceToBayDeltaMeters).toFixed(2)} m closer to the target bay centre than Attempt #${prev.attemptNumber}.`
+      `Bay distance: ${Math.abs(distanceToBayDeltaMeters).toFixed(2)} m closer than Attempt #${prev.attemptNumber}`
     );
   }
 
   if (scoreDelta !== null && prev.finalScore !== null && currentEvalResult) {
     const sign = scoreDelta >= 0 ? '+' : '';
     bulletPoints.push(
-      `Evaluation score changed from ${prev.finalScore}/100 to ${currentEvalResult.score}/100 (${sign}${scoreDelta} pts).`
+      `Score: ${prev.finalScore} → ${currentEvalResult.score}/100 (${sign}${scoreDelta})`
     );
   }
 
-  if (positionErrorDeltaMeters !== null && positionErrorDeltaMeters <= -0.05) {
+  if (bulletPoints.length === 0) {
     bulletPoints.push(
-      `Bay centre offset improved by ${Math.abs(positionErrorDeltaMeters).toFixed(2)} m.`
+      `Attempt #${currentAttemptNumber} vs Attempt #${prev.attemptNumber}: ${currentCollisions} collision(s)`
     );
   }
 
@@ -615,61 +610,59 @@ function describeProbableCause(
   const impactCornerLabel = crash.vehicleImpactZone.replace(/-/g, ' ');
   const steerDesc =
     crash.steeringDirection === 'straight'
-      ? 'straight wheels (0° lock)'
-      : `${crash.preImpactSteeringDeg.toFixed(1)}° ${crash.steeringDirection} steering lock`;
+      ? 'straight wheels'
+      : `${crash.preImpactSteeringDeg.toFixed(0)}° ${crash.steeringDirection} lock`;
 
-  let uncertainty: string | null = null;
-  if (crash.causeConfidence === 'low' || crash.impactZoneConfidence === 'low') {
-    uncertainty =
-      'Telemetry note: Impact occurred with very few preceding motion frames in the buffer, so the exact approach angle is estimated with lower certainty.';
-  }
+  const uncertainty =
+    crash.causeConfidence === 'low' || crash.impactZoneConfidence === 'low'
+      ? 'Low pre-impact speed; angle estimated.'
+      : null;
 
   switch (crash.probableCauseTag) {
     case 'excessive-reverse-speed':
       return {
-        causeText: `Reversing at ${crash.preImpactSpeedMph.toFixed(1)} mph reduced your reaction window and carried the ${impactCornerLabel} into ${crash.obstacleReadableLabel}.`,
+        causeText: `Reversed too fast (${crash.preImpactSpeedMph.toFixed(1)} mph) to stop the ${impactCornerLabel} in time.`,
         uncertainty,
       };
     case 'excessive-forward-speed':
       return {
-        causeText: `Approaching forward at ${crash.preImpactSpeedMph.toFixed(1)} mph with ${steerDesc} widened your turning radius and caused the ${impactCornerLabel} to strike ${crash.obstacleReadableLabel}.`,
+        causeText: `Approached too fast (${crash.preImpactSpeedMph.toFixed(1)} mph) with ${steerDesc}.`,
         uncertainty,
       };
     case 'front-swing-clip-during-reverse':
       return {
-        causeText: `While reversing under ${steerDesc}, the front end of your ${crash.vehicleName} swung outward and clipped ${crash.obstacleReadableLabel} with the ${impactCornerLabel}.`,
+        causeText: `Front end swung out under ${steerDesc} while reversing.`,
         uncertainty,
       };
     case 'early-turn-in-clip':
       return {
-        causeText: `Applying ${steerDesc} too early before the axle cleared ${crash.obstacleReadableLabel} caused the ${impactCornerLabel} to cut across the obstacle's boundary.`,
+        causeText: `Turned in too early (${steerDesc}) before clearing the obstacle.`,
         uncertainty,
       };
     case 'late-steering-correction':
       return {
-        causeText: `Delayed counter-steering (${steerDesc}, ${crash.alignmentErrorAtImpactDegrees.toFixed(1)}° off target heading) allowed the ${impactCornerLabel} to drift into ${crash.obstacleReadableLabel}.`,
+        causeText: `Counter-steered too late (${crash.alignmentErrorAtImpactDegrees.toFixed(0)}° off bay angle).`,
         uncertainty,
       };
     case 'kerb-overrun':
       return {
-        causeText: `Continuing ${crash.drivingDirectionBeforeImpact} travel at ${crash.preImpactSpeedMph.toFixed(1)} mph with ${steerDesc} pushed the ${impactCornerLabel} over the kerb line (${crash.obstacleReadableLabel}).`,
+        causeText: `Carried ${crash.drivingDirectionBeforeImpact} travel over the kerb line (${steerDesc}).`,
         uncertainty,
       };
     case 'insufficient-lateral-clearance':
       return {
-        causeText: `Insufficient side clearance (${crash.distanceToTargetCenterMeters.toFixed(2)} m from bay centre) brought the ${impactCornerLabel} into contact with ${crash.obstacleReadableLabel}.`,
+        causeText: `Passed too close laterally (${crash.distanceToTargetCenterMeters.toFixed(1)} m from bay centre).`,
         uncertainty,
       };
     case 'blind-spot-rear-backing':
       return {
-        causeText: `Reversing straight back (${steerDesc}) without stopping before the obstacle boundary caused the ${impactCornerLabel} to contact ${crash.obstacleReadableLabel}.`,
+        causeText: `Reversed straight back past the stopping point.`,
         uncertainty,
       };
     case 'uncertain-kinematics':
       return {
-        causeText: `Contact recorded with ${crash.obstacleReadableLabel}; pre-impact velocity was near zero at the moment of contact.`,
-        uncertainty:
-          'Exact pre-impact trajectory could not be established with high confidence from the preceding telemetry frames.',
+        causeText: `Low-speed contact with ${crash.obstacleReadableLabel.split('(')[0].trim()}.`,
+        uncertainty: 'Pre-impact speed was near zero.',
       };
   }
 }
@@ -742,19 +735,20 @@ export function generateCrashFeedback(params: {
         ? 'driving forward'
         : 'manoeuvring at low speed';
 
-  const whatHappened = `Your ${crashEvent.vehicleName}'s ${impactCornerText} collided with ${crashEvent.obstacleReadableLabel} while ${directionPhrase} at ${crashEvent.preImpactSpeedMph.toFixed(1)} mph.`;
+  const shortObstacleName = crashEvent.obstacleReadableLabel
+    .split('(')[0]
+    .trim();
 
-  const whereItHappened = `Impact occurred at world coordinates [${crashEvent.impactPosition[0].toFixed(1)}, ${crashEvent.impactPosition[2].toFixed(1)}], ${crashEvent.distanceToTargetCenterMeters.toFixed(2)} m from the ${crashEvent.challengeTitle} bay centre (${crashEvent.alignmentErrorAtImpactDegrees.toFixed(1)}° heading offset).`;
+  const whatHappened = `Hit ${shortObstacleName} (${impactCornerText}) with your ${crashEvent.vehicleName} while ${directionPhrase} at ${crashEvent.preImpactSpeedMph.toFixed(1)} mph (${crashEvent.obstacle.id}).`;
+
+  const whereItHappened = `${crashEvent.distanceToTargetCenterMeters.toFixed(1)} m from bay centre · ${crashEvent.alignmentErrorAtImpactDegrees.toFixed(0)}° off target angle.`;
 
   const steerText =
     crashEvent.steeringDirection === 'straight'
-      ? 'wheels straight (0.0°)'
-      : `${crashEvent.preImpactSteeringDeg.toFixed(1)}° ${crashEvent.steeringDirection} steering lock`;
-  const brakeText = crashEvent.wasBrakingBeforeImpact
-    ? 'with braking applied'
-    : 'without active braking';
+      ? '0° straight'
+      : `${crashEvent.preImpactSteeringDeg.toFixed(0)}° ${crashEvent.steeringDirection} lock`;
 
-  const preCrashBehavior = `In the ${crashEvent.recentTrajectory.length} telemetry frames before impact, you were ${directionPhrase} at ${crashEvent.preImpactSpeedMph.toFixed(1)} mph (${crashEvent.preImpactSpeedMps.toFixed(2)} m/s) with ${steerText} ${brakeText}.`;
+  const preCrashBehavior = `${directionPhrase.charAt(0).toUpperCase() + directionPhrase.slice(1)} at ${crashEvent.preImpactSpeedMph.toFixed(1)} mph, ${steerText}.`;
 
   const { causeText: probableCause, uncertainty: uncertaintyNote } =
     describeProbableCause(crashEvent);
@@ -767,46 +761,21 @@ export function generateCrashFeedback(params: {
     matchingPastCrash &&
     matchingPastCrash.record.obstacleId === crashEvent.obstacle.id
   ) {
-    repeatPatternNotice = `RAG Memory Match (${Math.round(matchingPastCrash.similarityScore * 100)}% similarity): You also hit ${crashEvent.obstacleReadableLabel} on Attempt #${matchingPastCrash.record.attemptNumber} while moving ${matchingPastCrash.record.drivingDirectionBeforeImpact} at ${matchingPastCrash.record.preImpactSpeedMph.toFixed(1)} mph.`;
+    repeatPatternNotice = `Repeat hit on ${shortObstacleName} (also Attempt #${matchingPastCrash.record.attemptNumber}).`;
   }
 
   const baseCorrectiveAction = primaryGuidance
     ? primaryGuidance.correctiveAction
-    : `Reduce your ${crashEvent.drivingDirectionBeforeImpact} speed below 3.0 mph and adjust your ${crashEvent.steeringDirection === 'straight' ? 'turning point' : `${crashEvent.steeringDirection} steering lock`} earlier to leave at least 0.5 m clearance from ${crashEvent.obstacleReadableLabel}.`;
+    : `Keep speed under 3 mph and adjust steering earlier to clear ${shortObstacleName}.`;
 
-  const actionableAdvice =
-    tone === 'warm-encouraging'
-      ? `Good effort testing the angle — ${baseCorrectiveAction}`
-      : tone === 'concise-calm'
-        ? `Take a breath and slow the approach: ${baseCorrectiveAction}`
-        : baseCorrectiveAction;
+  const actionableAdvice = baseCorrectiveAction;
 
   const nextAttemptFocus = primaryGuidance
     ? primaryGuidance.nextAttemptFocus
-    : `Maintain at least 0.5 m clearance from ${crashEvent.obstacleReadableLabel} and keep approach speed under 3.0 mph.`;
+    : `Leave ~0.5 m clearance from ${shortObstacleName} at < 3 mph.`;
 
-  // Concise natural spoken script for Web Speech API
-  const spokenPrefix =
-    tone === 'warm-encouraging'
-      ? 'Crash detected, no problem — let us adjust for the next run.'
-      : tone === 'concise-calm'
-        ? 'Collision detected. Here is a quick adjustment.'
-        : 'Collision detected.';
-
-  const spokenRepeatClause = repeatPatternNotice
-    ? `Note that you hit this same ${crashEvent.obstacle.kind.replace('-', ' ')} on attempt ${matchingPastCrash?.record.attemptNumber}.`
-    : '';
-
-  const spokenFeedbackText = [
-    spokenPrefix,
-    `Your ${impactCornerText} hit the ${crashEvent.obstacleReadableLabel.split('(')[0].trim()} while ${directionPhrase} at ${crashEvent.preImpactSpeedMph.toFixed(1)} miles per hour.`,
-    spokenRepeatClause,
-    primaryGuidance
-      ? primaryGuidance.nextAttemptFocus
-      : nextAttemptFocus,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  // Short, punchy spoken script (< 18 words)
+  const spokenFeedbackText = `${shortObstacleName} hit at ${crashEvent.preImpactSpeedMph.toFixed(1)} miles per hour. ${nextAttemptFocus}`;
 
   const headline = `CRASH DETECTED · ${crashEvent.obstacleReadableLabel.split('(')[0].trim()}`;
 
