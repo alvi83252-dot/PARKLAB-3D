@@ -390,7 +390,7 @@ export function ResultsPanel({
           <span>Retry</span>
         </button>
 
-        {result.passed && onWatchReplay && (
+        {onWatchReplay && (
           <button
             type="button"
             className="pk-btn pk-btn--replay"

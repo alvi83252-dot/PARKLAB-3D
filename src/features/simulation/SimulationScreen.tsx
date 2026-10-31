@@ -334,6 +334,10 @@ export function SimulationScreen({
       maxAltitudeReachedRef.current = 0;
 
       attemptStartMsRef.current = performance.now();
+      // Preserve previous attempt's 3D replay frames if the player drove before resetting/quitting
+      if (replayFramesRef.current.length > 2) {
+        setCompletedReplayFrames([...replayFramesRef.current]);
+      }
       replayFramesRef.current = [
         {
           timeSec: 0,
@@ -348,7 +352,6 @@ export function SimulationScreen({
           damage: createInitialDamageState(),
         },
       ];
-      setCompletedReplayFrames([]);
       setIsReplaying(false);
       setIsReplayPlaying(false);
       setReplayTimeSec(0);
@@ -552,8 +555,8 @@ export function SimulationScreen({
         maxAltitudeReachedRef.current = nextState.position[1];
       }
 
-      // Record trajectory frames during active Challenges so a completed challenge can be replayed
-      if (simulationMode === 'challenges') {
+      // Record trajectory frames so any attempt (completed, failed, or quit) can be replayed in 3D
+      {
         const elapsedSec = Math.max(
           0,
           (performance.now() - attemptStartMsRef.current) / 1000
@@ -729,7 +732,8 @@ export function SimulationScreen({
       );
       setDriverProfile(profile);
       setLastPointsBreakdown(breakdown);
-      setCompletedReplayFrames([]);
+      const freeRoamFrames = [...replayFramesRef.current];
+      setCompletedReplayFrames(freeRoamFrames);
       setIsReplaying(false);
       setEvaluationResult(result);
       crashLoop.recordEvaluationCompleted(
@@ -755,39 +759,34 @@ export function SimulationScreen({
     setDriverProfile(profile);
     setLastPointsBreakdown(breakdown);
 
-    // Save action replay ONLY when a challenge is completed (passed === true)
-    if (simulationMode === 'challenges' && result.passed) {
-      const finalElapsedSec = Math.max(
-        0.5,
-        (performance.now() - attemptStartMsRef.current) / 1000
-      );
-      const finalFrames = [...replayFramesRef.current];
-      const lastRecorded = finalFrames[finalFrames.length - 1];
-      const endSec = Math.max(
-        finalElapsedSec,
-        lastRecorded ? lastRecorded.timeSec + 0.1 : 0.5
-      );
-      finalFrames.push({
-        timeSec: Number(endSec.toFixed(3)),
-        position: [
-          vehicleState.position[0],
-          vehicleState.position[1],
-          vehicleState.position[2],
-        ],
-        rotationY: vehicleState.rotationY,
-        speedMps: 0,
-        steeringAngle: vehicleState.steeringAngle,
-        isBraking: true,
-        isReversing: false,
-        isAirborne: false,
-        collisionCount: vehicleState.collisionCount,
-        damage: vehicleState.damage,
-      });
-      setCompletedReplayFrames(finalFrames);
-    } else {
-      setCompletedReplayFrames([]);
-      setIsReplaying(false);
-    }
+    // Save 3D action replay for every evaluated attempt (both passed and try-again)
+    const finalElapsedSec = Math.max(
+      0.5,
+      (performance.now() - attemptStartMsRef.current) / 1000
+    );
+    const finalFrames = [...replayFramesRef.current];
+    const lastRecorded = finalFrames[finalFrames.length - 1];
+    const endSec = Math.max(
+      finalElapsedSec,
+      lastRecorded ? lastRecorded.timeSec + 0.1 : 0.5
+    );
+    finalFrames.push({
+      timeSec: Number(endSec.toFixed(3)),
+      position: [
+        vehicleState.position[0],
+        vehicleState.position[1],
+        vehicleState.position[2],
+      ],
+      rotationY: vehicleState.rotationY,
+      speedMps: 0,
+      steeringAngle: vehicleState.steeringAngle,
+      isBraking: true,
+      isReversing: false,
+      isAirborne: false,
+      collisionCount: vehicleState.collisionCount,
+      damage: vehicleState.damage,
+    });
+    setCompletedReplayFrames(finalFrames);
 
     setEvaluationResult(result);
     crashLoop.recordEvaluationCompleted(
@@ -818,18 +817,21 @@ export function SimulationScreen({
   }, [completedReplayFrames, replayTimeSec]);
 
   const handleStartReplay = useCallback(() => {
-    if (
-      simulationMode !== 'challenges' ||
-      !evaluationResult?.passed ||
-      completedReplayFrames.length === 0
-    ) {
+    let framesToPlay = completedReplayFrames;
+    if (framesToPlay.length < 2 && replayFramesRef.current.length >= 2) {
+      framesToPlay = [...replayFramesRef.current];
+      setCompletedReplayFrames(framesToPlay);
+    }
+    if (framesToPlay.length === 0) {
       return;
     }
+    setShowCustomizationDrawer(false);
+    setIsPaused(false);
     setReplayTimeSec(0);
     setReplayPlaybackRate(1);
     setIsReplayPlaying(true);
     setIsReplaying(true);
-  }, [simulationMode, evaluationResult, completedReplayFrames.length]);
+  }, [completedReplayFrames]);
 
   const handleExitReplay = useCallback(() => {
     setIsReplayPlaying(false);
@@ -1090,6 +1092,18 @@ export function SimulationScreen({
               <Eye size={13} aria-hidden="true" />
             )}
             <span>{isHudOpen ? 'Hide HUD' : 'Show HUD'}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`sim-topbar__tool-btn ${
+              isReplaying ? 'sim-topbar__tool-btn--active' : ''
+            }`}
+            onClick={isReplaying ? handleExitReplay : handleStartReplay}
+            title="Watch 3D Action Replay of your attempt"
+          >
+            <Play size={13} aria-hidden="true" />
+            <span>{isReplaying ? 'Exit Replay' : 'Replay'}</span>
           </button>
 
           <button
@@ -1382,14 +1396,22 @@ export function SimulationScreen({
                   attemptNumber={crashLoop.attemptNumber}
                   totalStoredCrashes={crashLoop.totalStoredCrashes}
                   totalStoredAttempts={crashLoop.totalStoredAttempts}
-                  savedReplaysCount={crashLoop.savedReplays.length}
+                  savedReplaysCount={
+                    Math.max(
+                      crashLoop.savedReplays.length,
+                      completedReplayFrames.length >= 2 ||
+                        replayFramesRef.current.length >= 2
+                        ? 1
+                        : 0
+                    )
+                  }
                   voiceCoach={crashLoop.voiceCoach}
                   soundtrack={crashLoop.soundtrack}
                   webcamObserver={crashLoop.webcamObserver}
                   latestQAExchange={crashLoop.latestQAExchange}
                   attemptComparison={crashLoop.attemptComparison}
                   onAskCoach={crashLoop.askCoach}
-                  onOpenReplays={() => crashLoop.openReplayModal()}
+                  onOpenReplays={handleStartReplay}
                   onResetMemory={crashLoop.resetRAGMemory}
                 />
 
@@ -1722,6 +1744,17 @@ export function SimulationScreen({
                   <RotateCcw size={15} />
                   <span>Repair &amp; Restart</span>
                 </button>
+                {(completedReplayFrames.length >= 2 ||
+                  replayFramesRef.current.length >= 2) && (
+                  <button
+                    type="button"
+                    className="pk-btn pk-btn--secondary"
+                    onClick={handleStartReplay}
+                  >
+                    <Play size={15} />
+                    <span>Watch 3D Replay</span>
+                  </button>
+                )}
                 {onExitToShowcase && (
                   <button
                     type="button"
@@ -1754,9 +1787,8 @@ export function SimulationScreen({
               onRetry={handleResetAttempt}
               onNextChallenge={handleNextChallenge}
               onWatchReplay={
-                simulationMode === 'challenges' &&
-                evaluationResult.passed &&
-                completedReplayFrames.length > 0
+                completedReplayFrames.length > 0 ||
+                replayFramesRef.current.length > 1
                   ? handleStartReplay
                   : undefined
               }
