@@ -3575,15 +3575,15 @@
 
 .pk-thumbstick {
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: 168px;
+  height: 168px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 50%,
     rgba(30, 41, 59, 0.72) 0%,
     rgba(11, 14, 20, 0.88) 75%
   );
-  border: 2px solid rgba(56, 189, 248, 0.45);
+  border: 2.5px solid rgba(56, 189, 248, 0.5);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65),
     inset 0 0 18px rgba(56, 189, 248, 0.14);
   display: flex;
@@ -3601,8 +3601,8 @@
 }
 
 .pk-thumbstick__knob {
-  width: 52px;
-  height: 52px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 35% 35%,
@@ -3610,7 +3610,7 @@
     #2563eb 65%,
     #1d4ed8 100%
   );
-  border: 2px solid rgba(248, 250, 252, 0.85);
+  border: 2.5px solid rgba(248, 250, 252, 0.9);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
   pointer-events: none;
   transition: transform 35ms linear;
@@ -3623,64 +3623,64 @@
 .pk-thumbstick__dir {
   position: absolute;
   font-family: var(--font-mono, monospace);
-  font-size: 0.58rem;
-  font-weight: 700;
+  font-size: 0.7rem;
+  font-weight: 800;
   letter-spacing: 0.06em;
-  color: rgba(148, 163, 184, 0.75);
+  color: rgba(148, 163, 184, 0.85);
   pointer-events: none;
 }
 
 .pk-thumbstick__dir--up {
-  top: 7px;
+  top: 9px;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .pk-thumbstick__dir--down {
-  bottom: 7px;
+  bottom: 9px;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .pk-thumbstick__dir--left {
-  left: 9px;
+  left: 11px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 .pk-thumbstick__dir--right {
-  right: 9px;
+  right: 11px;
   top: 50%;
   transform: translateY(-50%);
 }
 
 .pk-thumbstick-brake {
-  width: 66px;
-  height: 66px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 40%,
     rgba(239, 68, 68, 0.35),
     rgba(15, 23, 42, 0.92)
   );
-  border: 2px solid rgba(239, 68, 68, 0.65);
+  border: 2.5px solid rgba(239, 68, 68, 0.7);
   color: #fecaca;
   font-family: var(--font-mono, monospace);
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 800;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.65);
   touch-action: none;
   cursor: pointer;
 }
 
 .pk-thumbstick-brake small {
-  font-size: 0.52rem;
-  opacity: 0.8;
+  font-size: 0.62rem;
+  opacity: 0.85;
 }
 
 .pk-thumbstick-brake--active {
@@ -3834,19 +3834,19 @@
   }
 
   .pk-thumbstick {
-    width: 96px;
-    height: 96px;
+    width: 124px;
+    height: 124px;
   }
 
   .pk-thumbstick__knob {
-    width: 38px;
-    height: 38px;
+    width: 50px;
+    height: 50px;
   }
 
   .pk-thumbstick-brake {
-    width: 60px;
-    height: 60px;
-    font-size: 0.66rem;
+    width: 72px;
+    height: 72px;
+    font-size: 0.74rem;
   }
 
   .pk-hud__center-dock {
@@ -3856,7 +3856,7 @@
     margin-left: auto;
     margin-right: auto;
     width: fit-content;
-    max-width: calc(100% - 176px);
+    max-width: calc(100% - 216px);
     align-self: center;
     flex-wrap: nowrap;
     padding: 0.28rem 0.45rem;
@@ -3879,19 +3879,19 @@
 
 @media (max-width: 600px) and (min-height: 521px) {
   .pk-thumbstick {
-    width: 126px;
-    height: 126px;
+    width: 158px;
+    height: 158px;
   }
 
   .pk-thumbstick__knob {
-    width: 50px;
-    height: 50px;
+    width: 64px;
+    height: 64px;
   }
 
   .pk-thumbstick-brake {
-    width: 72px;
-    height: 72px;
-    font-size: 0.74rem;
+    width: 86px;
+    height: 86px;
+    font-size: 0.8rem;
   }
 
   .pk-results,
@@ -3919,19 +3919,19 @@
 
 @media (max-width: 380px) and (min-height: 521px) {
   .pk-thumbstick {
-    width: 112px;
-    height: 112px;
+    width: 144px;
+    height: 144px;
   }
 
   .pk-thumbstick__knob {
-    width: 44px;
-    height: 44px;
+    width: 58px;
+    height: 58px;
   }
 
   .pk-thumbstick-brake {
-    width: 64px;
-    height: 64px;
-    font-size: 0.68rem;
+    width: 78px;
+    height: 78px;
+    font-size: 0.76rem;
   }
 
   .pk-hud__center-dock {

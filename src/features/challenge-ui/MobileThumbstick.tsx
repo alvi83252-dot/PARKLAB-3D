@@ -64,16 +64,17 @@ export function MobileThumbstick({
       const rawDx = clientX - centerX;
       const rawDy = clientY - centerY;
       const dist = Math.hypot(rawDx, rawDy);
+      const maxRadius = Math.max(36, rect.width * 0.36);
 
-      const clampedDist = Math.min(dist, STICK_RADIUS_PX);
+      const clampedDist = Math.min(dist, maxRadius);
       const angle = Math.atan2(rawDy, rawDx);
       const clampedX = Math.cos(angle) * clampedDist;
       const clampedY = Math.sin(angle) * clampedDist;
 
       setKnobOffset({ x: clampedX, y: clampedY });
 
-      const normX = clampedX / STICK_RADIUS_PX;
-      const normY = clampedY / STICK_RADIUS_PX;
+      const normX = clampedX / maxRadius;
+      const normY = clampedY / maxRadius;
       syncDirectionInputs(normX, normY);
     },
     [syncDirectionInputs]
