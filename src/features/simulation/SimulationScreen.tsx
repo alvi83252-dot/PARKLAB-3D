@@ -11,6 +11,8 @@ import {
   Camera,
   ChevronDown,
   ChevronUp,
+  Palette,
+  Sparkles,
 } from 'lucide-react';
 import type { VehicleRuntimeState } from '../../types/vehicle.types';
 import type {
@@ -49,6 +51,8 @@ import {
   ChallengeHUD,
   ResultsPanel,
 } from '../challenge-ui';
+import { CustomizationStudioPanel } from '../../components/ui/CustomizationStudioPanel';
+import { useCustomization } from '../../config/customization.config';
 
 type ExtendedAttemptMetrics = ParkingAttemptMetrics &
   PullUpRightTelemetryExtension;
@@ -70,10 +74,11 @@ function createInitialVehicleState(
 /**
  * Main integrated simulation screen (Section 4.7).
  * Connects Faizan's 3D World & Camera, Joachim's Vehicle Physics & Models,
- * and Anjila's Challenges, Evaluation & Gameplay HUD.
+ * Anjila's Challenges, Evaluation & Gameplay HUD, and the 3D Car & World Customization Studio.
  */
 export function SimulationScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { skinSpec, themeSpec } = useCustomization();
 
   // Resolve initial vehicle and challenge from URL search params if valid
   const initialVehicleId = useMemo<string>(() => {
@@ -100,6 +105,8 @@ export function SimulationScreen() {
   const [showGuides, setShowGuides] = useState<boolean>(true);
   const [attemptResetKey, setAttemptResetKey] = useState<number>(0);
   const [showSelectorsPanel, setShowSelectorsPanel] = useState<boolean>(true);
+  const [showCustomizationDrawer, setShowCustomizationDrawer] =
+    useState<boolean>(false);
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
 
   const selectedVehicle = useMemo(
@@ -446,6 +453,20 @@ export function SimulationScreen() {
             <Compass size={14} aria-hidden="true" />
             <span>{activeChallenge.title}</span>
           </span>
+
+          <span
+            className="placeholder-card__eyebrow"
+            style={{
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              borderColor: 'rgba(245, 158, 11, 0.35)',
+              color: '#fbbf24',
+            }}
+          >
+            <Sparkles size={13} aria-hidden="true" />
+            <span>
+              {skinSpec.badge} • {themeSpec.badge}
+            </span>
+          </span>
         </div>
 
         <div
@@ -456,6 +477,31 @@ export function SimulationScreen() {
             flexWrap: 'wrap',
           }}
         >
+          <button
+            type="button"
+            onClick={() => setShowCustomizationDrawer((prev) => !prev)}
+            className="btn-secondary"
+            style={{
+              cursor: 'pointer',
+              padding: '0.35rem 0.75rem',
+              borderColor: showCustomizationDrawer
+                ? '#f59e0b'
+                : 'rgba(245, 158, 11, 0.45)',
+              backgroundColor: showCustomizationDrawer
+                ? 'rgba(245, 158, 11, 0.2)'
+                : 'rgba(245, 158, 11, 0.08)',
+              color: '#fde68a',
+            }}
+            title="Customize Car Craft (Wooden, LEGO, Origami, Cyberpunk) & 3D World Theme"
+          >
+            <Palette size={15} aria-hidden="true" />
+            <span>
+              {showCustomizationDrawer
+                ? 'Close Craft Lab'
+                : 'Customize Car & World'}
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={handleToggleCamera}
@@ -524,6 +570,11 @@ export function SimulationScreen() {
           </button>
         </div>
       </div>
+
+      {/* Quick Collapsible Live 3D Customization Studio Drawer */}
+      {showCustomizationDrawer && (
+        <CustomizationStudioPanel compact />
+      )}
 
       {/* Main 3D Simulation Viewport + Non-Obstructive HUD Overlay */}
       <div
@@ -666,7 +717,7 @@ export function SimulationScreen() {
         )}
       </div>
 
-      {/* Integrated Challenge & Vehicle Selection Trays */}
+      {/* Integrated Challenge, Vehicle & Customization Selection Trays */}
       {showSelectorsPanel && (
         <div
           style={{
@@ -697,6 +748,15 @@ export function SimulationScreen() {
             selectedVehicleId={selectedVehicleId}
             onSelect={handleSelectVehicle}
           />
+
+          <hr
+            style={{
+              border: 'none',
+              borderTop: '1px solid var(--color-border-subtle)',
+            }}
+          />
+
+          <CustomizationStudioPanel compact />
         </div>
       )}
     </div>

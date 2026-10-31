@@ -306,7 +306,7 @@ function ParkedCarObstacle({ obstacle }: ParkedCarObstacleProps) {
       </mesh>
 
       {/* High-detail procedural 3D vehicle model (Sedan, Hatchback, SUV, or Flying Tesla Roadster) matching obstacle dimensions */}
-      <VehicleModel vehicle={parkedVehicle} />
+      <VehicleModel vehicle={parkedVehicle} isTrafficObstacle />
     </group>
   );
 }
