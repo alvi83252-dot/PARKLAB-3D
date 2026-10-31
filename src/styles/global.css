@@ -97,6 +97,55 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+
+  /* Click-and-Drag Webpage Grab-Scroll (Pull Upwards to Scroll Down) */
+  cursor: grab;
+  touch-action: pan-y;
+  overscroll-behavior-y: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Active Grabbing State When Pulling the Webpage Up/Down */
+html.is-grab-scrolling,
+html.is-grab-scrolling body,
+html.is-grab-scrolling * {
+  cursor: grabbing !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Prevent native browser ghost-dragging of links, images, and videos during page pull */
+img,
+video,
+a,
+svg,
+.gameplay-stage,
+.hero-stage__viewport,
+.reel-card,
+.route-tile {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Preserve normal text selection & I-beam cursor inside form inputs and code blocks */
+input,
+textarea,
+select,
+[contenteditable='true'] {
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Interactive controls retain pointer cursor until a drag-scroll begins */
+a,
+button,
+[role='button'],
+label,
+summary,
+select {
+  cursor: pointer;
 }
 
 #root {

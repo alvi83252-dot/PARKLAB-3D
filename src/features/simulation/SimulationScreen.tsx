@@ -210,6 +210,7 @@ export function SimulationScreen({
   const [showGuides, setShowGuides] = useState<boolean>(true);
   const [attemptResetKey, setAttemptResetKey] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isHudOpen, setIsHudOpen] = useState<boolean>(true);
   const [showCustomizationDrawer, setShowCustomizationDrawer] =
     useState<boolean>(false);
   const [webglSupported, setWebglSupported] = useState<boolean>(true);
@@ -915,6 +916,9 @@ export function SimulationScreen({
       } else if (event.code === 'KeyC' && !event.repeat) {
         event.preventDefault();
         handleToggleCamera();
+      } else if (event.code === 'KeyH' && !event.repeat) {
+        event.preventDefault();
+        setIsHudOpen((prev) => !prev);
       } else if (event.code === 'KeyR' && !event.repeat) {
         event.preventDefault();
         handleResetAttempt();
@@ -953,7 +957,10 @@ export function SimulationScreen({
   return (
     <div className="sim-fullscreen" data-testid="simulation-screen">
       {/* Floating Top HUD Bar */}
-      <header className="sim-topbar" aria-label="Simulator Controls">
+      <header
+        className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''}`}
+        aria-label="Simulator Controls"
+      >
         {/* Left: Pause + Brand + Mode Switcher (Challenges vs Free Roam) */}
         <div className="sim-topbar__left">
           <button
@@ -1062,8 +1069,29 @@ export function SimulationScreen({
           </nav>
         )}
 
-        {/* Right: Driver Rank/XP Leaderboard Button, Craft Lab & AI Coach, Vehicle Quick-Switcher, Guides Toggle, and Showcase Exit */}
+        {/* Right: HUD Toggle, Driver Rank/XP Leaderboard Button, Craft Lab & AI Coach, Vehicle Quick-Switcher, Guides Toggle, and Showcase Exit */}
         <div className="sim-topbar__right">
+          <button
+            type="button"
+            className={`sim-topbar__tool-btn sim-topbar__hud-toggle-btn ${
+              !isHudOpen ? 'sim-topbar__tool-btn--active' : ''
+            }`}
+            onClick={() => setIsHudOpen((prev) => !prev)}
+            aria-pressed={!isHudOpen}
+            title={
+              isHudOpen
+                ? 'Close HUD overlay to clear the screen (Shortcut: H)'
+                : 'Open HUD overlay (Shortcut: H)'
+            }
+          >
+            {isHudOpen ? (
+              <EyeOff size={13} aria-hidden="true" />
+            ) : (
+              <Eye size={13} aria-hidden="true" />
+            )}
+            <span>{isHudOpen ? 'Hide HUD' : 'Show HUD'}</span>
+          </button>
+
           <button
             type="button"
             className={`sim-topbar__tool-btn ${
@@ -1300,6 +1328,9 @@ export function SimulationScreen({
               onReset={handleResetAttempt}
               onRepairVehicle={handleResetAttempt}
               onToggleCamera={handleToggleCamera}
+              isHudOpen={isHudOpen}
+              onToggleHud={() => setIsHudOpen((prev) => !prev)}
+              onOpenCustomizer={() => setShowCustomizationDrawer(true)}
               onDismissCrashReport={crashLoop.dismissCrashReport}
               onReplayCrashVoice={crashLoop.voiceCoach.replayLastCoaching}
               onStopCrashVoice={crashLoop.voiceCoach.stopSpeaking}

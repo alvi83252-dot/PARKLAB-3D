@@ -406,10 +406,12 @@
 
 /* Scroll Indicator */
 .landing-scroll-indicator {
-  position: absolute;
-  bottom: 1.65rem;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  align-self: center;
+  margin-top: 2rem;
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
@@ -425,7 +427,7 @@
 
 .landing-scroll-indicator:hover {
   border-color: rgba(239, 68, 68, 0.5);
-  transform: translateX(-50%) translateY(2px);
+  transform: translateY(2px);
 }
 
 .landing-scroll-indicator__text {
@@ -451,29 +453,31 @@
    ================================================================ */
 .landing-showcase {
   position: relative;
-  min-height: 340vh;
-  padding: 0 2.5rem;
+  min-height: auto;
+  padding: 3rem 2.5rem 2rem;
 }
 
 .showcase-sticky-hud {
-  position: sticky;
-  top: 4.5rem;
-  height: calc(100vh - 5.5rem);
-  z-index: 4;
+  position: relative;
+  top: auto;
+  height: auto;
+  z-index: 6;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  margin-bottom: 2.5rem;
   pointer-events: none;
 }
 
 .showcase-studio-frame {
   max-width: 1440px;
   width: 100%;
-  height: 100%;
+  height: auto;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 1rem;
   padding: 1rem 0;
 }
 
@@ -588,8 +592,8 @@
 /* Studio Reticle Corners (Car Craft Reference) */
 .showcase-studio-drag-zone {
   position: relative;
-  flex: 1;
-  margin: 0.75rem 0;
+  min-height: 300px;
+  margin: 0.5rem 0;
   pointer-events: auto;
   cursor: grab;
   touch-action: pan-y;
@@ -798,13 +802,17 @@
   position: relative;
   z-index: 6;
   max-width: 1440px;
-  margin: -55vh auto 0;
-  padding-bottom: 12vh;
+  margin: 0 auto;
+  padding-bottom: 6vh;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
   pointer-events: none;
 }
 
 .showcase-chapter {
-  min-height: 76vh;
+  min-height: 46vh;
+  padding: 1rem 0;
   display: flex;
   align-items: center;
 }
@@ -1322,6 +1330,10 @@
    RESPONSIVE DESIGN (TABLET & MOBILE)
    ================================================================ */
 @media (max-width: 1120px) {
+  .landing-active-vehicle-pill {
+    display: none;
+  }
+
   .manoeuvres-preview-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1350,7 +1362,7 @@
   }
 
   .landing-showcase {
-    padding: 0 1rem;
+    padding: 2rem 1rem;
   }
 
   .showcase-studio-top {
@@ -1363,7 +1375,7 @@
   }
 
   .showcase-chapters {
-    margin-top: -25vh;
+    margin-top: 0;
   }
 
   .manoeuvres-preview-grid {
