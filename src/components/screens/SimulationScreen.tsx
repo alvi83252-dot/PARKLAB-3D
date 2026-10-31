@@ -1,5 +1,5 @@
-import { WorldShowcaseView } from '../../features/world';
+import { SimulationScreen as IntegratedSimulationScreen } from '../../features/simulation';
 
 export function SimulationScreen() {
-  return <WorldShowcaseView />;
+  return <IntegratedSimulationScreen />;
 }

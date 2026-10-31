@@ -14,10 +14,7 @@ export type VehicleCategory =
   | 'hatchback'
   | 'sedan'
   | 'suv'
-  | 'sports'
-  | 'compact'
-  | 'saloon'
-  | 'electric-roadster';
+  | 'sports';
 
 export interface VehicleDimensions {
   length: number;
