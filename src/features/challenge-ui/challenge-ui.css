@@ -1679,13 +1679,15 @@
 
 .pk-thumbstick-dock {
   position: absolute;
-  right: 1.15rem;
-  bottom: 1.15rem;
+  left: 0.9rem;
+  right: 0.9rem;
+  bottom: 0.9rem;
   z-index: 12;
   display: none;
   align-items: flex-end;
+  justify-content: space-between;
   gap: 0.85rem;
-  pointer-events: auto;
+  pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
@@ -1693,6 +1695,11 @@
 
 .pk-thumbstick-dock--force-visible {
   display: flex;
+}
+
+.pk-thumbstick,
+.pk-thumbstick-brake {
+  pointer-events: auto;
 }
 
 .pk-thumbstick {
@@ -1841,13 +1848,52 @@
 
 @media (max-width: 600px) {
   .pk-hud {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas:
-      'mission'
-      'center'
-      'telemetry'
-      'instructions'
-      'controls';
+      'mission telemetry'
+      'center center'
+      'instructions instructions';
+    gap: 0.35rem;
+    padding: 0.4rem;
+  }
+
+  .pk-hud__panel {
+    padding: 0.4rem 0.55rem;
+  }
+
+  .pk-hud__mission--minimized {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .pk-hud__speed-value {
+    font-size: 1.25rem;
+  }
+
+  .pk-hud__metrics-grid {
+    gap: 0.2rem 0.4rem;
+  }
+
+  .pk-hud__metric-value {
+    font-size: 0.72rem;
+  }
+
+  .pk-hud__instructions {
+    display: none;
+  }
+
+  .pk-thumbstick {
+    width: 112px;
+    height: 112px;
+  }
+
+  .pk-thumbstick__knob {
+    width: 44px;
+    height: 44px;
+  }
+
+  .pk-thumbstick-brake {
+    width: 64px;
+    height: 64px;
   }
 
   .pk-results {

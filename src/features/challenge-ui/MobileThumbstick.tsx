@@ -1,11 +1,9 @@
 /**
- * PARKLAB 3D — Mobile Virtual Thumbstick & Touch Handbrake Component
+ * PARKLAB 3D — Mobile Virtual Thumbstick (Right) & Touch Handbrake (Left)
  *
- * Provides a responsive 360° touch/pointer virtual thumbstick and handbrake
- * pedal for mobile and tablet devices. Translates 2D thumbstick deflection
- * (including diagonal forward/reverse + left/right steering combinations)
- * into standard `KeyW`, `KeyS`, `KeyA`, `KeyD`, and `Space` window keyboard
- * events so `VehicleController` responds with zero changes to vehicle physics.
+ * Ergonomic dual-thumb mobile layout:
+ * - Left Thumb (Bottom-Left): Dedicated STOP / BRAKE pedal (`Space` handbrake)
+ * - Right Thumb (Bottom-Right): 360° Drive & Steer thumbstick (`KeyW`, `KeyS`, `KeyA`, `KeyD`)
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -21,7 +19,7 @@ const KEY_CHAR_MAP: Record<ThumbstickKeyCode, string> = {
   Space: ' ',
 };
 
-const STICK_RADIUS_PX = 54;
+const STICK_RADIUS_PX = 48;
 const DEADZONE_RATIO = 0.24;
 
 function dispatchDrivingKey(type: 'keydown' | 'keyup', code: ThumbstickKeyCode) {
@@ -190,9 +188,23 @@ export function MobileThumbstick({
       className={`pk-thumbstick-dock ${
         forceVisible ? 'pk-thumbstick-dock--force-visible' : ''
       }`}
-      aria-label="Mobile Touch Driving Thumbstick"
+      aria-label="Mobile Touch Driving Controls"
     >
-      {/* Left/Main 360° Driving & Steering Thumbstick */}
+      {/* LEFT SIDE: Dedicated Touch Handbrake / Stop Thumb Button */}
+      <button
+        type="button"
+        className={`pk-thumbstick-brake ${
+          isBrakingTouch ? 'pk-thumbstick-brake--active' : ''
+        }`}
+        onPointerDown={handleBrakeDown}
+        onPointerUp={handleBrakeUp}
+        onPointerCancel={handleBrakeUp}
+      >
+        <span>BRAKE</span>
+        <small>STOP</small>
+      </button>
+
+      {/* RIGHT SIDE: 360° Driving & Steering Thumbstick */}
       <div
         ref={baseRef}
         className={`pk-thumbstick ${
@@ -219,20 +231,6 @@ export function MobileThumbstick({
           }}
         />
       </div>
-
-      {/* Dedicated Touch Handbrake / Stop Pedal */}
-      <button
-        type="button"
-        className={`pk-thumbstick-brake ${
-          isBrakingTouch ? 'pk-thumbstick-brake--active' : ''
-        }`}
-        onPointerDown={handleBrakeDown}
-        onPointerUp={handleBrakeUp}
-        onPointerCancel={handleBrakeUp}
-      >
-        <span>STOP</span>
-        <small>BRAKE</small>
-      </button>
     </div>
   );
 }

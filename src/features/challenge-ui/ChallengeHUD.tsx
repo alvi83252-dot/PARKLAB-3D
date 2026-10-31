@@ -99,8 +99,13 @@ export function ChallengeHUD({
   onReplayCrashVoice,
   onStopCrashVoice,
 }: ChallengeHUDProps) {
-  const [instructionsExpanded, setInstructionsExpanded] = useState(true);
-  const [forceTouchStick, setForceTouchStick] = useState(false);
+  const isMobileViewport =
+    typeof window !== 'undefined' && window.innerWidth <= 640;
+  const [missionMinimized, setMissionMinimized] =
+    useState<boolean>(isMobileViewport);
+  const [instructionsExpanded, setInstructionsExpanded] = useState<boolean>(
+    !isMobileViewport
+  );
 
   // Convert m/s to mph
   const rawMph = Math.abs(vehicleState.speedMps) * MPS_TO_MPH;
@@ -176,87 +181,125 @@ export function ChallengeHUD({
 
   return (
     <aside className="pk-hud" aria-label="Driving Simulation HUD">
-      {/* Top-Left: Active Challenge & Live Progress */}
-      <div className="pk-hud__panel pk-hud__mission">
+      {/* Top-Left: Active Challenge & Live Progress (Minimizable on iPhone/Mobile) */}
+      <div
+        className={`pk-hud__panel pk-hud__mission ${
+          missionMinimized ? 'pk-hud__mission--minimized' : ''
+        }`}
+      >
         <div className="pk-hud__mission-top">
           <span className="pk-hud__label">
-            Active Manoeuvre
-            {attemptNumber ? ` · Attempt #${attemptNumber}` : ''}
+            {missionMinimized
+              ? `${challenge.title} (${progressPercent}%)`
+              : `Active Manoeuvre${attemptNumber ? ` · #${attemptNumber}` : ''}`}
           </span>
-          <span
-            className={`pk-difficulty-badge pk-difficulty-badge--${challenge.difficulty}`}
-          >
-            {challenge.difficulty}
-          </span>
-        </div>
 
-        <h2 className="pk-hud__challenge-title">{challenge.title}</h2>
-
-        <div className="pk-hud__progress-section">
-          <div className="pk-hud__progress-row">
-            <span
-              className={`pk-hud__status-chip pk-hud__status-chip--${statusState.modifier}`}
-            >
-              {statusState.modifier === 'ready' && (
-                <CheckCircle2 size={11} aria-hidden="true" />
-              )}
-              {statusState.label}
-            </span>
-            <span>{progressPercent}%</span>
-          </div>
-          <div
-            className="pk-hud__progress-track"
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div
-              className="pk-hud__progress-fill"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {(onEvaluate || onReset || onToggleCamera) && (
-          <div className="pk-hud__actions">
-            {onEvaluate && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            {missionMinimized && onEvaluate && (
               <button
                 type="button"
-                className={`pk-btn ${
-                  statusState.modifier === 'ready'
-                    ? 'pk-btn--success'
-                    : 'pk-btn--primary'
-                }`}
+                className="pk-hud__toggle-btn"
                 onClick={onEvaluate}
+                style={{ color: '#34d399', borderColor: 'rgba(16,185,129,0.4)' }}
               >
-                <Flag size={13} aria-hidden="true" />
-                <span>Assess Parking</span>
+                Assess
               </button>
             )}
-            {onReset && (
-              <button
-                type="button"
-                className="pk-btn pk-btn--secondary"
-                onClick={onReset}
-              >
-                <RotateCcw size={13} aria-hidden="true" />
-                <span>Retry</span>
-              </button>
-            )}
-            {onToggleCamera && (
-              <button
-                type="button"
-                className="pk-btn pk-btn--secondary"
-                onClick={onToggleCamera}
-              >
-                <Camera size={13} aria-hidden="true" />
-                <span>
-                  {cameraMode ? `Cam: ${cameraMode}` : 'Switch Camera'}
-                </span>
-              </button>
-            )}
+            <button
+              type="button"
+              className="pk-hud__toggle-btn"
+              onClick={() => setMissionMinimized((prev) => !prev)}
+              aria-expanded={!missionMinimized}
+              title={
+                missionMinimized
+                  ? 'Expand Active Manoeuvre panel'
+                  : 'Minimize Active Manoeuvre panel'
+              }
+            >
+              {missionMinimized ? (
+                <>
+                  <ChevronDown size={11} aria-hidden="true" /> Expand
+                </>
+              ) : (
+                <>
+                  <ChevronUp size={11} aria-hidden="true" /> Min
+                </>
+              )}
+            </button>
           </div>
+        </div>
+
+        {!missionMinimized && (
+          <>
+            <h2 className="pk-hud__challenge-title">{challenge.title}</h2>
+
+            <div className="pk-hud__progress-section">
+              <div className="pk-hud__progress-row">
+                <span
+                  className={`pk-hud__status-chip pk-hud__status-chip--${statusState.modifier}`}
+                >
+                  {statusState.modifier === 'ready' && (
+                    <CheckCircle2 size={11} aria-hidden="true" />
+                  )}
+                  {statusState.label}
+                </span>
+                <span>{progressPercent}%</span>
+              </div>
+              <div
+                className="pk-hud__progress-track"
+                role="progressbar"
+                aria-valuenow={progressPercent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="pk-hud__progress-fill"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {(onEvaluate || onReset || onToggleCamera) && (
+              <div className="pk-hud__actions">
+                {onEvaluate && (
+                  <button
+                    type="button"
+                    className={`pk-btn ${
+                      statusState.modifier === 'ready'
+                        ? 'pk-btn--success'
+                        : 'pk-btn--primary'
+                    }`}
+                    onClick={onEvaluate}
+                  >
+                    <Flag size={13} aria-hidden="true" />
+                    <span>Assess</span>
+                  </button>
+                )}
+                {onReset && (
+                  <button
+                    type="button"
+                    className="pk-btn pk-btn--secondary"
+                    onClick={onReset}
+                  >
+                    <RotateCcw size={13} aria-hidden="true" />
+                    <span>Retry</span>
+                  </button>
+                )}
+                {onToggleCamera && (
+                  <button
+                    type="button"
+                    className="pk-btn pk-btn--secondary"
+                    onClick={onToggleCamera}
+                  >
+                    <Camera size={13} aria-hidden="true" />
+                    <span>
+                      {cameraMode ? `Cam: ${cameraMode}` : 'Camera'}
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -368,19 +411,9 @@ export function ChallengeHUD({
         )}
       </div>
 
-      {/* Bottom-Right: Driving Controls Reference + Mobile Virtual Thumbstick */}
+      {/* Bottom-Right: Default Desktop Driving Controls Reference */}
       <div className="pk-hud__panel pk-hud__controls">
-        <div className="pk-hud__instructions-header">
-          <span className="pk-hud__label">Driving Controls</span>
-          <button
-            type="button"
-            className="pk-hud__toggle-btn"
-            onClick={() => setForceTouchStick((prev) => !prev)}
-            title="Toggle virtual touch thumbstick"
-          >
-            {forceTouchStick ? 'Hide Stick' : 'Touch Stick'}
-          </button>
-        </div>
+        <span className="pk-hud__label">Driving Controls</span>
         <div className="pk-hud__controls-list">
           <div className="pk-hud__control-item">
             <span>Accelerate</span>
@@ -409,8 +442,8 @@ export function ChallengeHUD({
         </div>
       </div>
 
-      {/* Mobile Virtual Thumbstick & Handbrake Dock (auto-visible on mobile/touch) */}
-      <MobileThumbstick forceVisible={forceTouchStick} />
+      {/* Mobile-Only Virtual Thumbstick (Right) & Brake (Left) */}
+      <MobileThumbstick />
     </aside>
   );
 }
