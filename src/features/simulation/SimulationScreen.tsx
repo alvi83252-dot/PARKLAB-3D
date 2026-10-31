@@ -232,22 +232,8 @@ export function SimulationScreen({
   const fullscreenRef = useRef<HTMLDivElement | null>(null);
   const switcherRef = useRef<HTMLElement | null>(null);
 
-  // Compute uniform UI scale for desktop split-screen while keeping mobile viewports at 1:1 native mobile UI scale
-  const [uiScale, setUiScale] = useState<number>(() => {
-    if (typeof window === 'undefined') return 1;
-    if (window.innerWidth <= 820 || window.innerHeight <= 520) return 1;
-    const screenW = window.screen?.availWidth || 1680;
-    const screenH = (window.screen?.availHeight || 960) - 100;
-    const refW = Math.max(1680, Math.min(1920, screenW));
-    const refH = Math.max(880, Math.min(1000, screenH));
-    return Math.max(
-      0.25,
-      Math.min(1, window.innerWidth / refW, window.innerHeight / refH)
-    );
-  });
-
   useEffect(() => {
-    const updateScale = () => {
+    const handleViewportResize = () => {
       const el = fullscreenRef.current;
       const vw = el ? el.clientWidth || window.innerWidth : window.innerWidth;
       const vh = el ? el.clientHeight || window.innerHeight : window.innerHeight;
@@ -255,28 +241,18 @@ export function SimulationScreen({
       setIsMobileView(mobile);
       if (mobile) {
         setIsTopbarMinimized(true);
-        setUiScale(1);
-        return;
       }
-      const screenW = window.screen?.availWidth || 1680;
-      const screenH = (window.screen?.availHeight || 960) - 100;
-      const refW = Math.max(1680, Math.min(1920, screenW));
-      const refH = Math.max(880, Math.min(1000, screenH));
-      const nextScale = Math.max(0.25, Math.min(1, vw / refW, vh / refH));
-      setUiScale((prev) =>
-        Math.abs(prev - nextScale) > 0.002 ? nextScale : prev
-      );
     };
 
-    updateScale();
-    window.addEventListener('resize', updateScale);
+    handleViewportResize();
+    window.addEventListener('resize', handleViewportResize);
     let observer: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined' && fullscreenRef.current) {
-      observer = new ResizeObserver(updateScale);
+      observer = new ResizeObserver(handleViewportResize);
       observer.observe(fullscreenRef.current);
     }
     return () => {
-      window.removeEventListener('resize', updateScale);
+      window.removeEventListener('resize', handleViewportResize);
       observer?.disconnect();
     };
   }, []);
@@ -1169,19 +1145,8 @@ export function SimulationScreen({
         )}
       </div>
 
-      {/* Uniformly Scaled Full-Screen Resolution UI Layer */}
-      <div
-        className="sim-ui-scale-layer"
-        style={
-          uiScale < 0.999
-            ? {
-                width: `${(100 / uiScale).toFixed(4)}%`,
-                height: `${(100 / uiScale).toFixed(4)}%`,
-                transform: `scale(${uiScale.toFixed(4)})`,
-              }
-            : undefined
-        }
-      >
+      {/* Full-Screen Simulation UI Layer */}
+      <div className="sim-ui-scale-layer">
         {/* Floating Top HUD Bar */}
         <header
           className={`sim-topbar ${!isHudOpen ? 'sim-topbar--hud-closed' : ''} ${

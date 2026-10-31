@@ -494,13 +494,13 @@ export function ChallengeHUD({
               <>
                 <span>
                   {missionCollapsed
-                    ? `${challenge.title} · ${progressPercent}%`
+                    ? `${challenge.title.replace(/\s*Parking$/i, '')} · ${progressPercent}%`
                     : 'Minimize Mission'}
                 </span>
                 {missionCollapsed ? (
-                  <ChevronDown size={11} aria-hidden="true" />
+                  <ChevronDown size={12} aria-hidden="true" />
                 ) : (
-                  <ChevronUp size={11} aria-hidden="true" />
+                  <ChevronUp size={12} aria-hidden="true" />
                 )}
               </>
             )}
@@ -523,10 +523,10 @@ export function ChallengeHUD({
             aria-expanded={!telemetryCollapsed}
             data-testid="mobile-telemetry-drawer-tab"
           >
-            <ShieldAlert size={11} aria-hidden="true" />
+            <ShieldAlert size={12} aria-hidden="true" />
             <span>
               {telemetryCollapsed
-                ? `${displayMph} MPH · ${gearSlot} · HP ${carHealth}%`
+                ? `${displayMph} MPH · ${gearSlot} · ${carHealth}%`
                 : 'Minimize Stats'}
             </span>
             {telemetryCollapsed ? (
