@@ -1,9 +1,28 @@
 /**
- * PARKLAB 3D — Core Parking Evaluation Domain Types
- * Architectural foundation for manoeuvre assessment and scoring.
+ * PARKLAB 3D — Shared Parking Evaluation Technical Contracts
  */
 
 import type { EulerRotation, Vector3D } from './challenge.types';
+
+export interface ParkingAttemptMetrics {
+  elapsedSeconds: number;
+  collisions: number;
+  corrections: number;
+}
+
+export interface ParkingEvaluationResult {
+  passed: boolean;
+  score: number;
+  stars: 0 | 1 | 2 | 3;
+  collisions: number;
+  alignmentErrorDegrees: number;
+  positionErrorMeters: number;
+  elapsedSeconds: number;
+  corrections: number;
+  feedback: string[];
+}
+
+/* Stage 1 Extended Architectural Interfaces */
 
 export type AlignmentStatus =
   | 'optimal'
@@ -19,31 +38,19 @@ export type EvaluationFinalResult =
   | 'incomplete';
 
 export interface ParkingPositionSnapshot {
-  /** Final recorded world position of the vehicle centre */
   position: Vector3D;
-  /** Final recorded rotation of the vehicle */
   rotation: EulerRotation;
-  /** Lateral deviation from the bay centreline in metres */
   lateralOffsetMetres: number;
-  /** Longitudinal deviation from the bay centreline in metres */
   longitudinalOffsetMetres: number;
-  /** Angular deviation from the target bay heading in degrees */
   headingDeviationDegrees: number;
-  /** Whether all four wheels/corners are fully contained within bay markings */
   isWithinBayBounds: boolean;
 }
 
 export interface ParkingEvaluation {
-  /** Normalized accuracy score from 0 to 100 */
   accuracyScore: number;
-  /** Total number of obstacle, boundary, or kerb collisions recorded */
   collisionCount: number;
-  /** Assessment of the vehicle's angular and spatial alignment */
   alignmentStatus: AlignmentStatus;
-  /** Spatial telemetry snapshot of the final parked position */
   parkingPosition: ParkingPositionSnapshot;
-  /** Elapsed manoeuvre time in seconds */
   completionTime: number;
-  /** Overall UK driving test manoeuvre outcome */
   finalResult: EvaluationFinalResult;
 }

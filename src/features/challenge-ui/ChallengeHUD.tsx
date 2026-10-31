@@ -1,0 +1,365 @@
+/**
+ * PARKLAB 3D — ChallengeHUD Component
+ *
+ * Non-obstructive 3D gameplay heads-up display showing:
+ * - Current challenge title, difficulty badge, and live progress bar.
+ * - Speedometer in mph (converted from m/s) + drive direction indicator.
+ * - Live spatial telemetry (bay distance, heading error, collisions, time).
+ * - Step-by-step manoeuvre instructions.
+ * - Keyboard driving controls reference and optional integration triggers.
+ */
+
+import { useState } from 'react';
+import {
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Flag,
+  RotateCcw,
+} from 'lucide-react';
+import {
+  MPS_TO_MPH,
+  computeFootprintContainment,
+  normalizeAngleRadians,
+} from '../evaluation/evaluateParking';
+import type {
+  ParkingAttemptMetrics,
+  ParkingChallengeDefinition,
+  VehicleDefinition,
+  VehicleDimensions,
+  VehicleRuntimeState,
+} from '../challenges/types';
+import './challenge-ui.css';
+
+const DEFAULT_VEHICLE_DIMENSIONS: VehicleDimensions = {
+  width: 1.82,
+  height: 1.46,
+  length: 4.5,
+};
+
+export interface ChallengeHUDProps {
+  /** Active parking challenge definition */
+  challenge: ParkingChallengeDefinition;
+  /** Current runtime state from the vehicle physics controller */
+  vehicleState: VehicleRuntimeState;
+  /** Optional selected vehicle definition for exact 4-corner live containment */
+  vehicle?: VehicleDefinition;
+  /** Optional attempt metrics (elapsed time, collisions, corrections) */
+  metrics?: Partial<ParkingAttemptMetrics>;
+  /** Optional current camera mode ('follow' | 'overhead') */
+  cameraMode?: 'follow' | 'overhead' | string;
+  /** Optional callback to trigger parking evaluation from the HUD */
+  onEvaluate?: () => void;
+  /** Optional callback to reset the current attempt */
+  onReset?: () => void;
+  /** Optional callback to toggle camera view */
+  onToggleCamera?: () => void;
+}
+
+function formatDuration(seconds: number): string {
+  const safeSeconds = Math.max(0, seconds);
+  const mins = Math.floor(safeSeconds / 60);
+  const rem = safeSeconds - mins * 60;
+  if (mins > 0) {
+    return `${mins}:${rem.toFixed(1).padStart(4, '0')}`;
+  }
+  return `${rem.toFixed(1)}s`;
+}
+
+export function ChallengeHUD({
+  challenge,
+  vehicleState,
+  vehicle,
+  metrics,
+  cameraMode,
+  onEvaluate,
+  onReset,
+  onToggleCamera,
+}: ChallengeHUDProps) {
+  const [instructionsExpanded, setInstructionsExpanded] = useState(true);
+
+  // Convert m/s to mph
+  const rawMph = Math.abs(vehicleState.speedMps) * MPS_TO_MPH;
+  const displayMph = rawMph < 0.15 ? '0.0' : rawMph.toFixed(1);
+
+  // Determine gear / movement badge
+  const isStationary =
+    !vehicleState.isMoving && Math.abs(vehicleState.speedMps) <= 0.08;
+  const gearLabel = isStationary
+    ? 'STOP'
+    : vehicleState.speedMps < -0.05
+      ? 'REV'
+      : 'FWD';
+  const gearModifier = isStationary
+    ? 'stop'
+    : vehicleState.speedMps < -0.05
+      ? 'rev'
+      : 'fwd';
+
+  // Live footprint & alignment telemetry
+  const dimensions = vehicle?.dimensions ?? DEFAULT_VEHICLE_DIMENSIONS;
+  const containment = computeFootprintContainment(
+    challenge.parkingTarget,
+    dimensions,
+    vehicleState.position,
+    vehicleState.rotationY
+  );
+
+  const headingDiffDeg = Math.abs(
+    (normalizeAngleRadians(
+      vehicleState.rotationY - challenge.parkingTarget.rotationY
+    ) *
+      180) /
+      Math.PI
+  );
+
+  // Compute progress percentage from spawn distance to target bay
+  const initialSpawnDist = Math.max(
+    1,
+    Math.hypot(
+      challenge.spawnPosition[0] - challenge.parkingTarget.position[0],
+      challenge.spawnPosition[2] - challenge.parkingTarget.position[2]
+    )
+  );
+  const proximityRatio = Math.max(
+    0,
+    Math.min(1, 1 - containment.euclideanPositionErrorMeters / initialSpawnDist)
+  );
+  const cornerRatio = containment.cornersInsideCount / 4;
+  const progressPercent = containment.allCornersInside
+    ? isStationary && headingDiffDeg <= 10
+      ? 100
+      : 92
+    : Math.round(proximityRatio * 65 + cornerRatio * 30);
+
+  const statusState =
+    containment.allCornersInside && isStationary && headingDiffDeg <= 10
+      ? { label: 'READY TO ASSESS', modifier: 'ready' }
+      : containment.cornersInsideCount > 0 ||
+          containment.euclideanPositionErrorMeters < 3.0
+        ? {
+            label: `${containment.cornersInsideCount}/4 CORNERS IN BAY`,
+            modifier: 'aligning',
+          }
+        : { label: 'APPROACHING BAY', modifier: 'approaching' };
+
+  const collisionCount = Math.max(
+    vehicleState.collisionCount,
+    metrics?.collisions ?? 0
+  );
+  const elapsedSeconds = metrics?.elapsedSeconds ?? 0;
+  const corrections = metrics?.corrections ?? 0;
+
+  return (
+    <aside className="pk-hud" aria-label="Driving Simulation HUD">
+      {/* Top-Left: Active Challenge & Live Progress */}
+      <div className="pk-hud__panel pk-hud__mission">
+        <div className="pk-hud__mission-top">
+          <span className="pk-hud__label">Active Manoeuvre</span>
+          <span
+            className={`pk-difficulty-badge pk-difficulty-badge--${challenge.difficulty}`}
+          >
+            {challenge.difficulty}
+          </span>
+        </div>
+
+        <h2 className="pk-hud__challenge-title">{challenge.title}</h2>
+
+        <div className="pk-hud__progress-section">
+          <div className="pk-hud__progress-row">
+            <span
+              className={`pk-hud__status-chip pk-hud__status-chip--${statusState.modifier}`}
+            >
+              {statusState.modifier === 'ready' && (
+                <CheckCircle2 size={11} aria-hidden="true" />
+              )}
+              {statusState.label}
+            </span>
+            <span>{progressPercent}%</span>
+          </div>
+          <div
+            className="pk-hud__progress-track"
+            role="progressbar"
+            aria-valuenow={progressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className="pk-hud__progress-fill"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {(onEvaluate || onReset || onToggleCamera) && (
+          <div className="pk-hud__actions">
+            {onEvaluate && (
+              <button
+                type="button"
+                className={`pk-btn ${
+                  statusState.modifier === 'ready'
+                    ? 'pk-btn--success'
+                    : 'pk-btn--primary'
+                }`}
+                onClick={onEvaluate}
+              >
+                <Flag size={13} aria-hidden="true" />
+                <span>Assess Parking</span>
+              </button>
+            )}
+            {onReset && (
+              <button
+                type="button"
+                className="pk-btn pk-btn--secondary"
+                onClick={onReset}
+              >
+                <RotateCcw size={13} aria-hidden="true" />
+                <span>Reset</span>
+              </button>
+            )}
+            {onToggleCamera && (
+              <button
+                type="button"
+                className="pk-btn pk-btn--secondary"
+                onClick={onToggleCamera}
+              >
+                <Camera size={13} aria-hidden="true" />
+                <span>
+                  {cameraMode ? `Cam: ${cameraMode}` : 'Switch Camera'}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Top-Right: Speedometer (MPH) & Live Spatial Telemetry */}
+      <div className="pk-hud__panel pk-hud__telemetry">
+        <div className="pk-hud__speed-cluster">
+          <div className="pk-hud__speed-readout" aria-live="polite">
+            <span className="pk-hud__speed-value">{displayMph}</span>
+            <span className="pk-hud__speed-unit">mph</span>
+          </div>
+          <span
+            className={`pk-hud__gear-badge pk-hud__gear-badge--${gearModifier}`}
+          >
+            {gearLabel}
+          </span>
+        </div>
+
+        <div className="pk-hud__metrics-grid">
+          <div className="pk-hud__metric">
+            <span className="pk-hud__metric-label">Bay Distance</span>
+            <span
+              className={`pk-hud__metric-value ${
+                containment.euclideanPositionErrorMeters <= 0.6
+                  ? 'pk-hud__metric-value--ready'
+                  : ''
+              }`}
+            >
+              {containment.euclideanPositionErrorMeters.toFixed(2)} m
+            </span>
+          </div>
+
+          <div className="pk-hud__metric">
+            <span className="pk-hud__metric-label">Alignment</span>
+            <span
+              className={`pk-hud__metric-value ${
+                headingDiffDeg <= 8.5 ? 'pk-hud__metric-value--ready' : ''
+              }`}
+            >
+              {headingDiffDeg.toFixed(1)}°
+            </span>
+          </div>
+
+          <div className="pk-hud__metric">
+            <span className="pk-hud__metric-label">Collisions</span>
+            <span
+              className={`pk-hud__metric-value ${
+                collisionCount > 0 ? 'pk-hud__metric-value--danger' : ''
+              }`}
+            >
+              {collisionCount}
+            </span>
+          </div>
+
+          <div className="pk-hud__metric">
+            <span className="pk-hud__metric-label">Time / Shunts</span>
+            <span className="pk-hud__metric-value">
+              {formatDuration(elapsedSeconds)} · {corrections}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom-Left: Step-by-Step Manoeuvre Instructions */}
+      <div className="pk-hud__panel pk-hud__instructions">
+        <div className="pk-hud__instructions-header">
+          <span className="pk-hud__label">Manoeuvre Briefing</span>
+          <button
+            type="button"
+            className="pk-hud__toggle-btn"
+            onClick={() => setInstructionsExpanded((prev) => !prev)}
+            aria-expanded={instructionsExpanded}
+          >
+            {instructionsExpanded ? (
+              <>
+                <ChevronDown size={11} aria-hidden="true" /> Hide
+              </>
+            ) : (
+              <>
+                <ChevronUp size={11} aria-hidden="true" /> Steps (
+                {challenge.instructions.length})
+              </>
+            )}
+          </button>
+        </div>
+
+        {instructionsExpanded && (
+          <ol className="pk-hud__step-list">
+            {challenge.instructions.map((instruction, index) => (
+              <li key={`${challenge.id}-step-${index}`} className="pk-hud__step-item">
+                <span className="pk-hud__step-num">0{index + 1}</span>
+                <span>{instruction}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      {/* Bottom-Right: Driving Controls Reference */}
+      <div className="pk-hud__panel pk-hud__controls">
+        <span className="pk-hud__label">Driving Controls</span>
+        <div className="pk-hud__controls-list">
+          <div className="pk-hud__control-item">
+            <span>Accelerate</span>
+            <kbd className="pk-hud__kbd">W / ↑</kbd>
+          </div>
+          <div className="pk-hud__control-item">
+            <span>Brake / Rev</span>
+            <kbd className="pk-hud__kbd">S / ↓</kbd>
+          </div>
+          <div className="pk-hud__control-item">
+            <span>Steer Left</span>
+            <kbd className="pk-hud__kbd">A / ←</kbd>
+          </div>
+          <div className="pk-hud__control-item">
+            <span>Steer Right</span>
+            <kbd className="pk-hud__kbd">D / →</kbd>
+          </div>
+          <div className="pk-hud__control-item">
+            <span>Handbrake</span>
+            <kbd className="pk-hud__kbd">Space</kbd>
+          </div>
+          <div className="pk-hud__control-item">
+            <span>Camera View</span>
+            <kbd className="pk-hud__kbd">C</kbd>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+export default ChallengeHUD;
