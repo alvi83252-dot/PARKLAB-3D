@@ -6,6 +6,7 @@
  * - Score out of 100 and 0–3 star rating
  * - Collisions, position accuracy, alignment accuracy, elapsed time, and corrections
  * - Detailed examiner feedback list
+ * - Optional RAG Attempt-over-Attempt Progression & Crash Coaching Summary
  * - Controlled Retry and Next Challenge action callbacks
  */
 
@@ -13,13 +14,19 @@ import {
   AlertTriangle,
   ArrowRight,
   Award,
+  History,
   RotateCcw,
+  Sparkles,
   Star,
 } from 'lucide-react';
 import type {
   ParkingChallengeDefinition,
   ParkingEvaluationResult,
 } from '../challenges/types';
+import type {
+  AICrashFeedbackReport,
+  AttemptComparisonDelta,
+} from '../evaluation/crashRagTypes';
 import './challenge-ui.css';
 
 export interface ResultsPanelProps {
@@ -27,6 +34,10 @@ export interface ResultsPanelProps {
   result: ParkingEvaluationResult;
   /** Optional active challenge metadata for contextual heading */
   challenge?: ParkingChallengeDefinition;
+  /** Optional attempt-over-attempt comparison delta from the RAG feedback loop */
+  attemptComparison?: AttemptComparisonDelta | null;
+  /** Optional most recent crash coaching report from this attempt */
+  recentCrashReport?: AICrashFeedbackReport | null;
   /** Controlled callback to retry the current challenge */
   onRetry: () => void;
   /** Controlled callback to advance to the next challenge */
@@ -38,6 +49,8 @@ export interface ResultsPanelProps {
 export function ResultsPanel({
   result,
   challenge,
+  attemptComparison,
+  recentCrashReport,
   onRetry,
   onNextChallenge,
   onNext,
@@ -167,6 +180,46 @@ export function ResultsPanel({
           <span className="pk-results__metric-sub">Direction changes</span>
         </div>
       </div>
+
+      {/* Attempt-Over-Attempt Progression Summary (RAG Continuous Feedback Loop) */}
+      {attemptComparison && (
+        <div className="pk-results__feedback-box pk-results__comparison-box">
+          <h3 className="pk-results__feedback-heading">
+            <History size={13} aria-hidden="true" />
+            <span>{attemptComparison.headline}</span>
+          </h3>
+          <ul className="pk-results__feedback-list">
+            {attemptComparison.bulletPoints.map((pt, idx) => (
+              <li
+                key={`attempt-delta-${idx}`}
+                className="pk-results__feedback-item"
+              >
+                <span className="pk-results__feedback-dot" aria-hidden="true" />
+                <span>{pt}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* RAG Crash Coaching Summary if a collision occurred during the attempt */}
+      {recentCrashReport && (
+        <div className="pk-results__feedback-box pk-results__rag-box">
+          <h3 className="pk-results__feedback-heading">
+            <Sparkles size={13} aria-hidden="true" />
+            <span>
+              AI Crash Coach Summary ({recentCrashReport.obstacleLabel.split('(')[0].trim()})
+            </span>
+          </h3>
+          <p className="pk-crash-coach__text">
+            {recentCrashReport.whatHappened} {recentCrashReport.probableCause}
+          </p>
+          <p className="pk-crash-coach__subtext">
+            <strong>Next Attempt Focus:</strong>{' '}
+            {recentCrashReport.nextAttemptFocus}
+          </p>
+        </div>
+      )}
 
       {/* Examiner Feedback List */}
       <div className="pk-results__feedback-box">

@@ -6,3 +6,12 @@ export type { ChallengeHUDProps } from './ChallengeHUD';
 
 export { ResultsPanel } from './ResultsPanel';
 export type { ResultsPanelProps } from './ResultsPanel';
+
+export {
+  AICoachControlsBar,
+  CrashFeedbackPanel,
+} from './CrashFeedbackPanel';
+export type {
+  AICoachControlsBarProps,
+  CrashFeedbackPanelProps,
+} from './CrashFeedbackPanel';

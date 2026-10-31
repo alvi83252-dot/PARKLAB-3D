@@ -2,11 +2,12 @@
  * PARKLAB 3D — ChallengeHUD Component
  *
  * Non-obstructive 3D gameplay heads-up display showing:
- * - Current challenge title, difficulty badge, and live progress bar.
+ * - Current challenge title, difficulty badge, attempt number, and live progress bar.
  * - Speedometer in mph (converted from m/s) + drive direction indicator.
  * - Live spatial telemetry (bay distance, heading error, collisions, time).
  * - Step-by-step manoeuvre instructions.
  * - Keyboard driving controls reference and optional integration triggers.
+ * - Live RAG AI Crash Coach panel (`CrashFeedbackPanel`) when a collision occurs.
  */
 
 import { useState } from 'react';
@@ -23,6 +24,7 @@ import {
   computeFootprintContainment,
   normalizeAngleRadians,
 } from '../evaluation/evaluateParking';
+import type { AICrashFeedbackReport } from '../evaluation/crashRagTypes';
 import type {
   ParkingAttemptMetrics,
   ParkingChallengeDefinition,
@@ -30,6 +32,7 @@ import type {
   VehicleDimensions,
   VehicleRuntimeState,
 } from '../challenges/types';
+import { CrashFeedbackPanel } from './CrashFeedbackPanel';
 import './challenge-ui.css';
 
 const DEFAULT_VEHICLE_DIMENSIONS: VehicleDimensions = {
@@ -49,12 +52,24 @@ export interface ChallengeHUDProps {
   metrics?: Partial<ParkingAttemptMetrics>;
   /** Optional current camera mode ('follow' | 'overhead') */
   cameraMode?: 'follow' | 'overhead' | string;
+  /** Optional current attempt number on this challenge */
+  attemptNumber?: number;
+  /** Optional active RAG crash coaching report */
+  activeCrashReport?: AICrashFeedbackReport | null;
+  /** Optional indicator when the voice coach is actively speaking */
+  isVoiceSpeaking?: boolean;
   /** Optional callback to trigger parking evaluation from the HUD */
   onEvaluate?: () => void;
-  /** Optional callback to reset the current attempt */
+  /** Optional callback to reset/retry the current attempt */
   onReset?: () => void;
   /** Optional callback to toggle camera view */
   onToggleCamera?: () => void;
+  /** Optional callback to dismiss the active crash report */
+  onDismissCrashReport?: () => void;
+  /** Optional callback to replay the spoken crash coaching */
+  onReplayCrashVoice?: () => void;
+  /** Optional callback to stop spoken crash coaching */
+  onStopCrashVoice?: () => void;
 }
 
 function formatDuration(seconds: number): string {
@@ -73,9 +88,15 @@ export function ChallengeHUD({
   vehicle,
   metrics,
   cameraMode,
+  attemptNumber,
+  activeCrashReport,
+  isVoiceSpeaking = false,
   onEvaluate,
   onReset,
   onToggleCamera,
+  onDismissCrashReport,
+  onReplayCrashVoice,
+  onStopCrashVoice,
 }: ChallengeHUDProps) {
   const [instructionsExpanded, setInstructionsExpanded] = useState(true);
 
@@ -156,7 +177,10 @@ export function ChallengeHUD({
       {/* Top-Left: Active Challenge & Live Progress */}
       <div className="pk-hud__panel pk-hud__mission">
         <div className="pk-hud__mission-top">
-          <span className="pk-hud__label">Active Manoeuvre</span>
+          <span className="pk-hud__label">
+            Active Manoeuvre
+            {attemptNumber ? ` · Attempt #${attemptNumber}` : ''}
+          </span>
           <span
             className={`pk-difficulty-badge pk-difficulty-badge--${challenge.difficulty}`}
           >
@@ -215,7 +239,7 @@ export function ChallengeHUD({
                 onClick={onReset}
               >
                 <RotateCcw size={13} aria-hidden="true" />
-                <span>Reset</span>
+                <span>Retry</span>
               </button>
             )}
             {onToggleCamera && (
@@ -231,6 +255,20 @@ export function ChallengeHUD({
               </button>
             )}
           </div>
+        )}
+      </div>
+
+      {/* Center Slot: Non-obstructive RAG Crash Coaching Panel */}
+      <div className="pk-hud__center-slot">
+        {activeCrashReport && (
+          <CrashFeedbackPanel
+            report={activeCrashReport}
+            isSpeaking={isVoiceSpeaking}
+            onRetry={() => onReset?.()}
+            onDismiss={() => onDismissCrashReport?.()}
+            onReplayVoice={onReplayCrashVoice}
+            onStopVoice={onStopCrashVoice}
+          />
         )}
       </div>
 
