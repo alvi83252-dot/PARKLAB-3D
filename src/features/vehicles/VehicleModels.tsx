@@ -4,7 +4,8 @@
  * 1. Modern Hatchback
  * 2. Executive Sedan
  * 3. Large SUV
- * 4. New Tesla Roadster (aerodynamic extruded wedge, wide-body haunches, dark canopy, turbine wheels)
+ * 4. Flying Tesla Roadster (SpaceX Cold-Gas Rocket Thrusters, Vectored Hover-Turbine Pods,
+ *    Deployable Aero Flight Winglets, Extruded Wedge Fuselage & Ground Ion Downwash Ring)
  *
  * Coordinate convention (Part 3.1):
  * - Y is vertical (y = 0 is ground contact plane).
@@ -27,12 +28,27 @@ export interface VehicleWheelRefs {
   rearRightSpin: THREE.Group | null;
 }
 
+export type VehicleModelPartsRefs = VehicleWheelRefs;
+
+export function createVehiclePartsRefs(): VehicleWheelRefs {
+  return {
+    frontLeftSteer: null,
+    frontRightSteer: null,
+    frontLeftSpin: null,
+    frontRightSpin: null,
+    rearLeftSpin: null,
+    rearRightSpin: null,
+  };
+}
+
 export interface VehicleLightRefs {
   brakeLightLeft: THREE.MeshStandardMaterial | null;
   brakeLightRight: THREE.MeshStandardMaterial | null;
   brakeLightBar: THREE.MeshStandardMaterial | null;
   reverseLightLeft: THREE.MeshStandardMaterial | null;
   reverseLightRight: THREE.MeshStandardMaterial | null;
+  thrusterGlow?: THREE.MeshStandardMaterial | null;
+  hoverRingGlow?: THREE.MeshStandardMaterial | null;
 }
 
 export interface VehicleModelProps {
@@ -63,96 +79,130 @@ function WheelAssembly({
 }: WheelAssemblyProps) {
   const isSports = category === 'sports';
   const isSuv = category === 'suv';
-  const rimRadius = radius * (isSports ? 0.74 : isSuv ? 0.62 : 0.67);
-  const spokeCount = isSports ? 5 : isSuv ? 6 : 5;
+  const rimRadius = radius * (isSports ? 0.76 : isSuv ? 0.62 : 0.67);
+  const spokeCount = isSports ? 6 : isSuv ? 6 : 5;
   const caliperSign = isFront ? 1 : -1;
 
   const spokeAngles = useMemo(
     () =>
-      Array.from({ length: spokeCount }, (_, idx) => (idx * Math.PI * 2) / spokeCount),
+      Array.from(
+        { length: spokeCount },
+        (_, idx) => (idx * Math.PI * 2) / spokeCount
+      ),
     [spokeCount]
   );
 
+  // For the Flying Tesla Roadster ('sports'), each wheel assembly pivots into an
+  // angled hover-fan vector thruster nacelle with a glowing cyan ion thruster ring!
+  const hoverTiltAngle = isSports
+    ? (isRightSide ? -1 : 1) * 1.12 // ~64 deg hover vector tilt
+    : 0;
+
   return (
     <group ref={steerRef}>
-      {/* Stationary brake caliper for sports / sedan models */}
-      {(isSports || category === 'sedan') && (
-        <mesh
-          position={[
-            isRightSide ? width * 0.16 : -width * 0.16,
-            radius * 0.12,
-            caliperSign * radius * 0.36,
-          ]}
-        >
-          <boxGeometry args={[width * 0.35, radius * 0.34, radius * 0.24]} />
-          <meshStandardMaterial
-            color={isSports ? '#ef4444' : '#64748b'}
-            metalness={0.6}
-            roughness={0.3}
-          />
-        </mesh>
-      )}
-
-      {/* Rotating wheel & tyre assembly */}
-      <group ref={spinRef}>
-        {/* Outer rubber tyre */}
-        <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
-          <cylinderGeometry args={[radius, radius, width, 24]} />
-          <meshStandardMaterial
-            color="#14171f"
-            roughness={0.85}
-            metalness={0.1}
-          />
-        </mesh>
-
-        {/* Inner dark wheel barrel */}
-        <mesh rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[rimRadius, rimRadius, width * 1.01, 20]} />
-          <meshStandardMaterial
-            color={isSports ? '#1e2430' : isSuv ? '#334155' : '#94a3b8'}
-            metalness={0.75}
-            roughness={0.25}
-          />
-        </mesh>
-
-        {/* Alloy spokes on outer wheel face */}
-        {spokeAngles.map((angle, i) => (
+      <group rotation={[0, 0, hoverTiltAngle]}>
+        {/* Stationary brake caliper or hover-nacelle vector strut */}
+        {(isSports || category === 'sedan') && (
           <mesh
-            key={i}
             position={[
-              isRightSide ? width * 0.48 : -width * 0.48,
-              Math.sin(angle) * rimRadius * 0.46,
-              Math.cos(angle) * rimRadius * 0.46,
+              isRightSide ? width * 0.16 : -width * 0.16,
+              radius * 0.12,
+              caliperSign * radius * 0.36,
             ]}
-            rotation={[angle + (isSports ? 0.22 : 0), 0, 0]}
           >
-            <boxGeometry
-              args={[
-                width * 0.08,
-                rimRadius * 0.88,
-                isSports ? rimRadius * 0.18 : rimRadius * 0.22,
+            <boxGeometry args={[width * 0.38, radius * 0.34, radius * 0.26]} />
+            <meshStandardMaterial
+              color={isSports ? '#38bdf8' : '#64748b'}
+              emissive={isSports ? '#0284c7' : '#000000'}
+              emissiveIntensity={isSports ? 1.2 : 0}
+              metalness={0.7}
+              roughness={0.25}
+            />
+          </mesh>
+        )}
+
+        {/* Glowing Ion Downwash Thruster Ring inside Flying Roadster Hover-Pod */}
+        {isSports && (
+          <mesh
+            position={[isRightSide ? width * 0.42 : -width * 0.42, 0, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+          >
+            <torusGeometry args={[rimRadius * 0.78, 0.024, 12, 28]} />
+            <meshStandardMaterial
+              color="#7dd3fc"
+              emissive="#38bdf8"
+              emissiveIntensity={2.4}
+            />
+          </mesh>
+        )}
+
+        {/* Rotating wheel / hover-turbine impeller assembly */}
+        <group ref={spinRef}>
+          {/* Outer rubber tyre / carbon turbine shroud */}
+          <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+            <cylinderGeometry args={[radius, radius, width, 24]} />
+            <meshStandardMaterial
+              color={isSports ? '#0f172a' : '#14171f'}
+              roughness={isSports ? 0.4 : 0.85}
+              metalness={isSports ? 0.65 : 0.1}
+            />
+          </mesh>
+
+          {/* Inner wheel barrel / hover-fan core */}
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[rimRadius, rimRadius, width * 1.01, 20]} />
+            <meshStandardMaterial
+              color={isSports ? '#0c4a6e' : isSuv ? '#334155' : '#94a3b8'}
+              emissive={isSports ? '#0ea5e9' : '#000000'}
+              emissiveIntensity={isSports ? 0.9 : 0}
+              metalness={0.75}
+              roughness={0.25}
+            />
+          </mesh>
+
+          {/* Alloy spokes / turbine blades */}
+          {spokeAngles.map((angle, i) => (
+            <mesh
+              key={i}
+              position={[
+                isRightSide ? width * 0.48 : -width * 0.48,
+                Math.sin(angle) * rimRadius * 0.46,
+                Math.cos(angle) * rimRadius * 0.46,
               ]}
+              rotation={[angle + (isSports ? 0.32 : 0), 0, 0]}
+            >
+              <boxGeometry
+                args={[
+                  width * 0.08,
+                  rimRadius * 0.88,
+                  isSports ? rimRadius * 0.16 : rimRadius * 0.22,
+                ]}
+              />
+              <meshStandardMaterial
+                color={isSports ? '#e0f2fe' : isSuv ? '#cbd5e1' : '#e2e8f0'}
+                metalness={0.85}
+                roughness={0.2}
+              />
+            </mesh>
+          ))}
+
+          {/* Center hub cap */}
+          <mesh
+            position={[isRightSide ? width * 0.51 : -width * 0.51, 0, 0]}
+            rotation={[0, 0, Math.PI / 2]}
+          >
+            <cylinderGeometry
+              args={[rimRadius * 0.24, rimRadius * 0.24, 0.025, 14]}
             />
             <meshStandardMaterial
-              color={isSports ? '#334155' : isSuv ? '#cbd5e1' : '#e2e8f0'}
-              metalness={0.85}
+              color={isSports ? '#38bdf8' : '#0f172a'}
+              emissive={isSports ? '#38bdf8' : '#000000'}
+              emissiveIntensity={isSports ? 1.8 : 0}
+              metalness={0.8}
               roughness={0.2}
             />
           </mesh>
-        ))}
-
-        {/* Center hub cap */}
-        <mesh
-          position={[isRightSide ? width * 0.51 : -width * 0.51, 0, 0]}
-          rotation={[0, 0, Math.PI / 2]}
-        >
-          <cylinderGeometry args={[rimRadius * 0.22, rimRadius * 0.22, 0.02, 12]} />
-          <meshStandardMaterial
-            color={isSports ? '#dc2626' : '#0f172a'}
-            metalness={0.8}
-            roughness={0.2}
-          />
-        </mesh>
+        </group>
       </group>
     </group>
   );
@@ -168,7 +218,12 @@ interface BodySectionProps {
 /**
  * 1. MODERN HATCHBACK — Compact 2-box hot-hatch with steep rear tailgate & roof spoiler
  */
-function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) {
+function HatchbackBody({
+  vehicle,
+  chassis,
+  paintColor,
+  lightRefs,
+}: BodySectionProps) {
   const { length: L, width: W, height: H } = vehicle.dimensions;
   const clearance = chassis.groundClearance;
   const lowerH = (H - clearance) * 0.48;
@@ -178,7 +233,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
 
   return (
     <group>
-      {/* Main lower chassis body */}
       <mesh position={[0, lowerCenterY, 0]} castShadow receiveShadow>
         <boxGeometry args={[W, lowerH, L * 0.96]} />
         <meshStandardMaterial
@@ -188,7 +242,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         />
       </mesh>
 
-      {/* Sculpted front nose & bumper */}
       <mesh
         position={[0, clearance + lowerH * 0.42, -L * 0.48]}
         castShadow
@@ -202,7 +255,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         />
       </mesh>
 
-      {/* Sloped front bonnet */}
       <mesh
         position={[0, clearance + lowerH * 0.96, -L * 0.29]}
         rotation={[0.14, 0, 0]}
@@ -217,7 +269,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         />
       </mesh>
 
-      {/* Long hatchback greenhouse cabin (extends toward rear tailgate) */}
       <mesh position={[0, cabinCenterY, L * 0.08]} castShadow receiveShadow>
         <boxGeometry args={[W * 0.84, cabinH, L * 0.58]} />
         <meshStandardMaterial
@@ -227,7 +278,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         />
       </mesh>
 
-      {/* Raked front windshield */}
       <mesh
         position={[0, cabinCenterY - 0.02, -L * 0.19]}
         rotation={[0.52, 0, 0]}
@@ -241,7 +291,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         />
       </mesh>
 
-      {/* Body-colored roof cap */}
       <mesh
         position={[0, clearance + lowerH + cabinH - 0.04, L * 0.09]}
         castShadow
@@ -255,7 +304,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         />
       </mesh>
 
-      {/* Sporty hot-hatch rear roof spoiler */}
       <mesh
         position={[0, clearance + lowerH + cabinH + 0.01, L * 0.39]}
         rotation={[-0.18, 0, 0]}
@@ -265,13 +313,11 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         <meshStandardMaterial color="#111827" metalness={0.5} roughness={0.35} />
       </mesh>
 
-      {/* Front honeycomb grille */}
       <mesh position={[0, clearance + lowerH * 0.36, -L * 0.501]}>
         <boxGeometry args={[W * 0.62, lowerH * 0.42, 0.03]} />
         <meshStandardMaterial color="#090d16" roughness={0.7} metalness={0.2} />
       </mesh>
 
-      {/* Side mirrors */}
       {[-1, 1].map((side) => (
         <mesh
           key={side}
@@ -287,7 +333,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         </mesh>
       ))}
 
-      {/* LED Headlights (local -Z front) */}
       {[-1, 1].map((side) => (
         <mesh
           key={`hl-${side}`}
@@ -302,7 +347,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         </mesh>
       ))}
 
-      {/* Rear Tail / Brake Lights (local +Z rear) */}
       <mesh position={[-W * 0.35, clearance + lowerH * 0.78, L * 0.482]}>
         <boxGeometry args={[W * 0.2, 0.12, 0.04]} />
         <meshStandardMaterial
@@ -326,7 +370,6 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
         />
       </mesh>
 
-      {/* Reverse Indicator Lights */}
       <mesh position={[-W * 0.28, clearance + lowerH * 0.66, L * 0.484]}>
         <boxGeometry args={[0.12, 0.05, 0.03]} />
         <meshStandardMaterial
@@ -356,7 +399,12 @@ function HatchbackBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionP
 /**
  * 2. EXECUTIVE SEDAN — Sleek 3-box luxury saloon with long bonnet & distinct rear boot deck
  */
-function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) {
+function SedanBody({
+  vehicle,
+  chassis,
+  paintColor,
+  lightRefs,
+}: BodySectionProps) {
   const { length: L, width: W, height: H } = vehicle.dimensions;
   const clearance = chassis.groundClearance;
   const lowerH = (H - clearance) * 0.48;
@@ -366,7 +414,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
 
   return (
     <group>
-      {/* Long main lower saloon fuselage */}
       <mesh position={[0, lowerCenterY, 0]} castShadow receiveShadow>
         <boxGeometry args={[W, lowerH, L * 0.97]} />
         <meshStandardMaterial
@@ -376,7 +423,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         />
       </mesh>
 
-      {/* Long sculpted executive hood */}
       <mesh
         position={[0, clearance + lowerH * 0.98, -L * 0.31]}
         rotation={[0.07, 0, 0]}
@@ -391,7 +437,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         />
       </mesh>
 
-      {/* Distinct rear trunk / boot deck */}
       <mesh
         position={[0, clearance + lowerH * 0.97, L * 0.36]}
         rotation={[-0.05, 0, 0]}
@@ -406,7 +451,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         />
       </mesh>
 
-      {/* Central saloon greenhouse cabin */}
       <mesh position={[0, cabinCenterY, 0.08]} castShadow receiveShadow>
         <boxGeometry args={[W * 0.83, cabinH, L * 0.42]} />
         <meshStandardMaterial
@@ -416,7 +460,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         />
       </mesh>
 
-      {/* Sloped front windshield */}
       <mesh
         position={[0, cabinCenterY - 0.02, -L * 0.14]}
         rotation={[0.58, 0, 0]}
@@ -426,7 +469,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         <meshStandardMaterial color="#0a1120" metalness={0.9} roughness={0.08} />
       </mesh>
 
-      {/* Fastback-angled rear saloon glass */}
       <mesh
         position={[0, cabinCenterY - 0.02, L * 0.23]}
         rotation={[-0.56, 0, 0]}
@@ -436,7 +478,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         <meshStandardMaterial color="#0a1120" metalness={0.9} roughness={0.08} />
       </mesh>
 
-      {/* Body-colored roof panel */}
       <mesh
         position={[0, clearance + lowerH + cabinH - 0.04, 0.06]}
         castShadow
@@ -450,7 +491,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         />
       </mesh>
 
-      {/* Executive chrome front radiator grille */}
       <mesh position={[0, clearance + lowerH * 0.48, -L * 0.488]}>
         <boxGeometry args={[W * 0.52, lowerH * 0.56, 0.03]} />
         <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.18} />
@@ -460,7 +500,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         <meshStandardMaterial color="#111827" metalness={0.5} roughness={0.4} />
       </mesh>
 
-      {/* Chrome side sill trim strips */}
       {[-1, 1].map((side) => (
         <mesh
           key={`trim-${side}`}
@@ -471,7 +510,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         </mesh>
       ))}
 
-      {/* Wing mirrors */}
       {[-1, 1].map((side) => (
         <mesh
           key={`mirror-${side}`}
@@ -487,7 +525,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         </mesh>
       ))}
 
-      {/* Dual-projector LED Headlights */}
       {[-1, 1].map((side) => (
         <mesh
           key={`hl-${side}`}
@@ -502,7 +539,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         </mesh>
       ))}
 
-      {/* Wide Executive LED Tail Lights */}
       <mesh position={[-W * 0.34, clearance + lowerH * 0.72, L * 0.486]}>
         <boxGeometry args={[W * 0.24, 0.1, 0.04]} />
         <meshStandardMaterial
@@ -526,7 +562,6 @@ function SedanBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps
         />
       </mesh>
 
-      {/* Reverse Lights */}
       <mesh position={[-W * 0.28, clearance + lowerH * 0.61, L * 0.488]}>
         <boxGeometry args={[0.14, 0.045, 0.03]} />
         <meshStandardMaterial
@@ -566,7 +601,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
 
   return (
     <group>
-      {/* Muscular high-clearance lower SUV body */}
       <mesh position={[0, lowerCenterY, 0]} castShadow receiveShadow>
         <boxGeometry args={[W, lowerH, L * 0.97]} />
         <meshStandardMaterial
@@ -576,13 +610,11 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         />
       </mesh>
 
-      {/* Matte-black off-road lower cladding & side steps */}
       <mesh position={[0, clearance + 0.09, 0]} castShadow receiveShadow>
         <boxGeometry args={[W * 1.01, 0.16, L * 0.94]} />
         <meshStandardMaterial color="#18181b" roughness={0.75} metalness={0.15} />
       </mesh>
 
-      {/* Clamshell front hood */}
       <mesh
         position={[0, clearance + lowerH + 0.03, -L * 0.31]}
         rotation={[0.04, 0, 0]}
@@ -597,7 +629,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         />
       </mesh>
 
-      {/* Tall upright SUV command cabin */}
       <mesh position={[0, cabinCenterY, L * 0.09]} castShadow receiveShadow>
         <boxGeometry args={[W * 0.89, cabinH, L * 0.64]} />
         <meshStandardMaterial
@@ -607,7 +638,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         />
       </mesh>
 
-      {/* Raked SUV windscreen */}
       <mesh
         position={[0, cabinCenterY, -L * 0.21]}
         rotation={[0.38, 0, 0]}
@@ -617,7 +647,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         <meshStandardMaterial color="#09101d" metalness={0.88} roughness={0.1} />
       </mesh>
 
-      {/* SUV roof cap */}
       <mesh
         position={[0, clearance + lowerH + cabinH - 0.03, L * 0.09]}
         castShadow
@@ -631,7 +660,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         />
       </mesh>
 
-      {/* Brushed silver longitudinal roof rails */}
       {[-1, 1].map((side) => (
         <mesh
           key={`rail-${side}`}
@@ -651,7 +679,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         </mesh>
       ))}
 
-      {/* Front silver skid plate & rugged 4x4 grille */}
       <mesh position={[0, clearance + 0.11, -L * 0.485]}>
         <boxGeometry args={[W * 0.62, 0.18, 0.04]} />
         <meshStandardMaterial color="#94a3b8" metalness={0.75} roughness={0.3} />
@@ -661,7 +688,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         <meshStandardMaterial color="#1e293b" metalness={0.6} roughness={0.35} />
       </mesh>
 
-      {/* Large SUV Side Mirrors */}
       {[-1, 1].map((side) => (
         <mesh
           key={`mirror-${side}`}
@@ -673,7 +699,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         </mesh>
       ))}
 
-      {/* Bold Rectangular LED Headlights */}
       {[-1, 1].map((side) => (
         <mesh
           key={`hl-${side}`}
@@ -688,7 +713,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         </mesh>
       ))}
 
-      {/* Vertical Signature SUV Tail Lights */}
       <mesh position={[-W * 0.41, clearance + lowerH * 0.76, L * 0.486]}>
         <boxGeometry args={[0.14, 0.34, 0.04]} />
         <meshStandardMaterial
@@ -712,7 +736,6 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
         />
       </mesh>
 
-      {/* Reverse Lights */}
       <mesh position={[-W * 0.32, clearance + lowerH * 0.56, L * 0.488]}>
         <boxGeometry args={[0.12, 0.07, 0.03]} />
         <meshStandardMaterial
@@ -740,10 +763,13 @@ function SuvBody({ vehicle, chassis, paintColor, lightRefs }: BodySectionProps) 
 }
 
 /**
- * 4. NEW TESLA ROADSTER — Futuristic low-slung aerodynamic electric sports car
- * Uses custom extruded aerodynamic wedge profiles, wide-body sculpted fenders,
- * dark panoramic glass canopy, flying buttresses, carbon splitter/diffuser,
- * and full-width cybernetic LED light bar.
+ * 4. FLYING TESLA ROADSTER (SPACEX HOVER-THRUSTER EDITION)
+ * Features:
+ * - Extruded aerodynamic hypercar wedge fuselage & dark panoramic glass canopy
+ * - Deployable swept aerodynamic flight winglets with cyan plasma leading edges
+ * - Underbody anti-gravity ion repulsion pads
+ * - Rear SpaceX cold-gas central & twin vector rocket nozzles + glowing ion thruster plume
+ * - Full-width cybernetic crimson LED tail-light blade
  */
 function RoadsterBody({
   vehicle,
@@ -754,32 +780,25 @@ function RoadsterBody({
   const { length: L, width: W, height: H } = vehicle.dimensions;
   const clearance = chassis.groundClearance;
 
-  // Custom extruded side-profile aerodynamic wedge fuselage
   const { fuselageGeo, canopyGeo } = useMemo(() => {
     const halfL = L / 2;
 
-    // Side profile in (z, y) coordinates where -halfL is front nose and +halfL is rear tail
     const bodyShape = new THREE.Shape();
     bodyShape.moveTo(-halfL * 0.98, clearance + 0.04);
-    // Razor-low front nose edge
     bodyShape.lineTo(-halfL * 0.99, clearance + 0.16);
-    // Smooth aerodynamic hood curve up to base of windscreen
     bodyShape.quadraticCurveTo(
       -halfL * 0.72,
       H * 0.56,
       -halfL * 0.36,
       H * 0.62
     );
-    // Waistline along cockpit
     bodyShape.lineTo(halfL * 0.35, H * 0.66);
-    // Sculpted rear decklid rise
     bodyShape.quadraticCurveTo(
       halfL * 0.78,
       H * 0.7,
       halfL * 0.97,
       H * 0.64
     );
-    // Kammback rear fascia & diffuser cut
     bodyShape.lineTo(halfL * 0.98, clearance + 0.18);
     bodyShape.lineTo(halfL * 0.86, clearance + 0.04);
     bodyShape.closePath();
@@ -793,16 +812,24 @@ function RoadsterBody({
       bevelSize: 0.06,
       bevelThickness: 0.08,
     });
-    // Rotate so shape (z, y) maps to world (Z, Y) and extrusion depth maps along X centered at 0
     bodyGeom.rotateY(Math.PI / 2);
     bodyGeom.translate(-bodyExtrudeWidth / 2, 0, 0);
     bodyGeom.computeVertexNormals();
 
-    // Sweeping dark teardrop glass canopy profile
     const glassShape = new THREE.Shape();
     glassShape.moveTo(-halfL * 0.44, H * 0.58);
-    glassShape.quadraticCurveTo(-halfL * 0.12, H * 1.02, halfL * 0.08, H * 0.98);
-    glassShape.quadraticCurveTo(halfL * 0.46, H * 0.92, halfL * 0.68, H * 0.64);
+    glassShape.quadraticCurveTo(
+      -halfL * 0.12,
+      H * 1.02,
+      halfL * 0.08,
+      H * 0.98
+    );
+    glassShape.quadraticCurveTo(
+      halfL * 0.46,
+      H * 0.92,
+      halfL * 0.68,
+      H * 0.64
+    );
     glassShape.lineTo(-halfL * 0.44, H * 0.58);
 
     const glassExtrudeWidth = W * 0.68;
@@ -827,8 +854,8 @@ function RoadsterBody({
       <mesh geometry={fuselageGeo} castShadow receiveShadow>
         <meshStandardMaterial
           color={paintColor}
-          metalness={0.78}
-          roughness={0.16}
+          metalness={0.8}
+          roughness={0.15}
         />
       </mesh>
 
@@ -858,7 +885,7 @@ function RoadsterBody({
         </mesh>
       ))}
 
-      {/* Wide-body sculpted front fenders (haunches over front wheels) */}
+      {/* Wide-body sculpted front fenders */}
       {[-1, 1].map((side) => (
         <mesh
           key={`front-fender-${side}`}
@@ -876,7 +903,7 @@ function RoadsterBody({
         </mesh>
       ))}
 
-      {/* Wide-body muscular rear haunches (over rear wheels) */}
+      {/* Wide-body muscular rear haunches */}
       {[-1, 1].map((side) => (
         <mesh
           key={`rear-fender-${side}`}
@@ -894,38 +921,49 @@ function RoadsterBody({
         </mesh>
       ))}
 
-      {/* Sculpted side aero skirts & pinched carbon waist intakes */}
+      {/* DEPLOYABLE AERO FLIGHT WINGLETS (Left & Right Swept Stabilizer Foil) */}
       {[-1, 1].map((side) => (
-        <group key={`aero-side-${side}`}>
+        <group key={`flight-winglet-${side}`}>
+          {/* Carbon-fibre swept winglet foil */}
           <mesh
-            position={[side * (W * 0.47), clearance + 0.05, 0]}
+            position={[side * (W * 0.57), H * 0.34, 0.08]}
+            rotation={[0.04, side * -0.28, side * 0.08]}
             castShadow
           >
-            <boxGeometry args={[0.1, 0.06, L * 0.52]} />
+            <boxGeometry args={[0.38, 0.032, L * 0.36]} />
             <meshStandardMaterial
-              color="#0f141c"
-              metalness={0.45}
-              roughness={0.4}
+              color="#0f172a"
+              metalness={0.75}
+              roughness={0.22}
             />
           </mesh>
+          {/* Glowing cyan plasma edge strip along winglet tip */}
           <mesh
-            position={[side * (W * 0.43), H * 0.42, 0.04]}
-            rotation={[0, side * 0.08, 0]}
+            position={[side * (W * 0.74), H * 0.36, 0.08]}
+            rotation={[0.04, side * -0.28, side * 0.08]}
           >
-            <boxGeometry args={[0.06, H * 0.26, L * 0.3]} />
+            <boxGeometry args={[0.03, 0.036, L * 0.34]} />
             <meshStandardMaterial
-              color="#0b0f17"
-              metalness={0.6}
-              roughness={0.3}
+              color="#7dd3fc"
+              emissive="#38bdf8"
+              emissiveIntensity={2.2}
             />
           </mesh>
         </group>
       ))}
 
-      {/* Carbon-fibre front aero splitter lip */}
+      {/* Carbon-fibre front aero splitter lip with cyan flight beacon */}
       <mesh position={[0, clearance + 0.03, -L * 0.485]} castShadow>
         <boxGeometry args={[W * 0.92, 0.045, 0.22]} />
         <meshStandardMaterial color="#0f141c" metalness={0.5} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, clearance + 0.035, -L * 0.498]}>
+        <boxGeometry args={[W * 0.56, 0.018, 0.02]} />
+        <meshStandardMaterial
+          color="#7dd3fc"
+          emissive="#38bdf8"
+          emissiveIntensity={2.0}
+        />
       </mesh>
 
       {/* Aggressive rear carbon-fibre venturi diffuser */}
@@ -934,13 +972,65 @@ function RoadsterBody({
         <meshStandardMaterial color="#0b0f17" metalness={0.5} roughness={0.4} />
       </mesh>
 
-      {/* Active rear carbon aero spoiler wing */}
+      {/* SPACEX COLD-GAS CENTRAL & DUAL ROCKET THRUSTER NOZZLES + ION PLUME */}
+      <group position={[0, clearance + 0.22, L * 0.49]}>
+        {/* Central main SpaceX vector thruster nozzle */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.13, 0.09, 0.14, 20]} />
+          <meshStandardMaterial
+            color="#334155"
+            metalness={0.9}
+            roughness={0.2}
+          />
+        </mesh>
+
+        {/* Glowing central plasma plume cone */}
+        <mesh position={[0, 0, 0.18]} rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.11, 0.38, 18]} />
+          <meshStandardMaterial
+            ref={(mat) => {
+              if (lightRefs) lightRefs.current.thrusterGlow = mat;
+            }}
+            color="#bae6fd"
+            emissive="#38bdf8"
+            emissiveIntensity={2.5}
+            transparent
+            opacity={0.85}
+          />
+        </mesh>
+
+        {/* Twin auxiliary vector thrusters */}
+        {[-1, 1].map((side) => (
+          <group key={`aux-thruster-${side}`} position={[side * 0.24, -0.02, 0]}>
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.07, 0.05, 0.11, 16]} />
+              <meshStandardMaterial
+                color="#334155"
+                metalness={0.9}
+                roughness={0.2}
+              />
+            </mesh>
+            <mesh position={[0, 0, 0.12]} rotation={[Math.PI / 2, 0, 0]}>
+              <coneGeometry args={[0.055, 0.22, 14]} />
+              <meshStandardMaterial
+                color="#7dd3fc"
+                emissive="#0ea5e9"
+                emissiveIntensity={2.1}
+                transparent
+                opacity={0.78}
+              />
+            </mesh>
+          </group>
+        ))}
+      </group>
+
+      {/* Active elevated rear carbon aero flight wing */}
       <mesh
-        position={[0, H * 0.68, L * 0.46]}
-        rotation={[-0.14, 0, 0]}
+        position={[0, H * 0.72, L * 0.45]}
+        rotation={[-0.16, 0, 0]}
         castShadow
       >
-        <boxGeometry args={[W * 0.86, 0.035, 0.16]} />
+        <boxGeometry args={[W * 0.9, 0.035, 0.18]} />
         <meshStandardMaterial color="#0f141c" metalness={0.65} roughness={0.25} />
       </mesh>
 
@@ -972,7 +1062,7 @@ function RoadsterBody({
           <meshStandardMaterial
             color="#ffffff"
             emissive="#7dd3fc"
-            emissiveIntensity={2.1}
+            emissiveIntensity={2.2}
           />
         </mesh>
       ))}
@@ -991,8 +1081,8 @@ function RoadsterBody({
       </mesh>
 
       {/* Dual Reverse LED Indicators in Rear Diffuser */}
-      <mesh position={[-W * 0.26, clearance + 0.16, L * 0.486]}>
-        <boxGeometry args={[0.16, 0.035, 0.03]} />
+      <mesh position={[-W * 0.38, clearance + 0.16, L * 0.486]}>
+        <boxGeometry args={[0.14, 0.035, 0.03]} />
         <meshStandardMaterial
           ref={(mat) => {
             if (lightRefs) lightRefs.current.reverseLightLeft = mat;
@@ -1002,8 +1092,8 @@ function RoadsterBody({
           emissiveIntensity={0}
         />
       </mesh>
-      <mesh position={[W * 0.26, clearance + 0.16, L * 0.486]}>
-        <boxGeometry args={[0.16, 0.035, 0.03]} />
+      <mesh position={[W * 0.38, clearance + 0.16, L * 0.486]}>
+        <boxGeometry args={[0.14, 0.035, 0.03]} />
         <meshStandardMaterial
           ref={(mat) => {
             if (lightRefs) lightRefs.current.reverseLightRight = mat;
@@ -1032,105 +1122,137 @@ export function VehicleModel({
     wheelRadius,
     wheelWidth,
     halfTrackX,
+    isFlyingVehicle,
+    hoverAltitudeMetres = 0,
   } = chassis;
+
+  const flightLiftY = isFlyingVehicle ? hoverAltitudeMetres : 0;
 
   return (
     <group name={`vehicle-model-${vehicle.id}`}>
-      {/* Category-specific procedural vehicle body */}
-      {vehicle.category === 'hatchback' && (
-        <HatchbackBody
-          vehicle={vehicle}
-          chassis={chassis}
-          paintColor={paintColor}
-          lightRefs={lightRefs}
-        />
-      )}
-      {vehicle.category === 'sedan' && (
-        <SedanBody
-          vehicle={vehicle}
-          chassis={chassis}
-          paintColor={paintColor}
-          lightRefs={lightRefs}
-        />
-      )}
-      {vehicle.category === 'suv' && (
-        <SuvBody
-          vehicle={vehicle}
-          chassis={chassis}
-          paintColor={paintColor}
-          lightRefs={lightRefs}
-        />
-      )}
-      {vehicle.category === 'sports' && (
-        <RoadsterBody
-          vehicle={vehicle}
-          chassis={chassis}
-          paintColor={paintColor}
-          lightRefs={lightRefs}
-        />
+      {/* Ground-plane Ion Hover Telemetry Ring for the Flying Tesla Roadster */}
+      {isFlyingVehicle && (
+        <group position={[0, 0.015, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry
+              args={[
+                vehicle.dimensions.width * 0.42,
+                vehicle.dimensions.width * 0.52,
+                40,
+              ]}
+            />
+            <meshStandardMaterial
+              ref={(mat) => {
+                if (lightRefs) lightRefs.current.hoverRingGlow = mat;
+              }}
+              color="#38bdf8"
+              emissive="#0ea5e9"
+              emissiveIntensity={1.6}
+              transparent
+              opacity={0.45}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        </group>
       )}
 
-      {/* 4 Independent Wheel Assemblies with Front Steering & All-Wheel Spin */}
-      {/* Front Left Wheel (-X, -Z) */}
-      <group position={[-halfTrackX, wheelRadius, frontAxleZ]}>
-        <WheelAssembly
-          radius={wheelRadius}
-          width={wheelWidth}
-          isRightSide={false}
-          isFront={true}
-          category={vehicle.category}
-          steerRef={(node) => {
-            if (wheelRefs) wheelRefs.current.frontLeftSteer = node;
-          }}
-          spinRef={(node) => {
-            if (wheelRefs) wheelRefs.current.frontLeftSpin = node;
-          }}
-        />
-      </group>
+      {/* Main Vehicle / Hovering Fuselage Group (Elevated when Flying Roadster is active) */}
+      <group position={[0, flightLiftY, 0]}>
+        {vehicle.category === 'hatchback' && (
+          <HatchbackBody
+            vehicle={vehicle}
+            chassis={chassis}
+            paintColor={paintColor}
+            lightRefs={lightRefs}
+          />
+        )}
+        {vehicle.category === 'sedan' && (
+          <SedanBody
+            vehicle={vehicle}
+            chassis={chassis}
+            paintColor={paintColor}
+            lightRefs={lightRefs}
+          />
+        )}
+        {vehicle.category === 'suv' && (
+          <SuvBody
+            vehicle={vehicle}
+            chassis={chassis}
+            paintColor={paintColor}
+            lightRefs={lightRefs}
+          />
+        )}
+        {vehicle.category === 'sports' && (
+          <RoadsterBody
+            vehicle={vehicle}
+            chassis={chassis}
+            paintColor={paintColor}
+            lightRefs={lightRefs}
+          />
+        )}
 
-      {/* Front Right Wheel (+X, -Z) */}
-      <group position={[halfTrackX, wheelRadius, frontAxleZ]}>
-        <WheelAssembly
-          radius={wheelRadius}
-          width={wheelWidth}
-          isRightSide={true}
-          isFront={true}
-          category={vehicle.category}
-          steerRef={(node) => {
-            if (wheelRefs) wheelRefs.current.frontRightSteer = node;
-          }}
-          spinRef={(node) => {
-            if (wheelRefs) wheelRefs.current.frontRightSpin = node;
-          }}
-        />
-      </group>
+        {/* 4 Independent Wheel / Hover-Turbine Assemblies */}
+        {/* Front Left (-X, -Z) */}
+        <group position={[-halfTrackX, wheelRadius, frontAxleZ]}>
+          <WheelAssembly
+            radius={wheelRadius}
+            width={wheelWidth}
+            isRightSide={false}
+            isFront={true}
+            category={vehicle.category}
+            steerRef={(node) => {
+              if (wheelRefs) wheelRefs.current.frontLeftSteer = node;
+            }}
+            spinRef={(node) => {
+              if (wheelRefs) wheelRefs.current.frontLeftSpin = node;
+            }}
+          />
+        </group>
 
-      {/* Rear Left Wheel (-X, +Z) */}
-      <group position={[-halfTrackX, wheelRadius, rearAxleZ]}>
-        <WheelAssembly
-          radius={wheelRadius}
-          width={wheelWidth}
-          isRightSide={false}
-          isFront={false}
-          category={vehicle.category}
-          spinRef={(node) => {
-            if (wheelRefs) wheelRefs.current.rearLeftSpin = node;
-          }}
-        />
-      </group>
+        {/* Front Right (+X, -Z) */}
+        <group position={[halfTrackX, wheelRadius, frontAxleZ]}>
+          <WheelAssembly
+            radius={wheelRadius}
+            width={wheelWidth}
+            isRightSide={true}
+            isFront={true}
+            category={vehicle.category}
+            steerRef={(node) => {
+              if (wheelRefs) wheelRefs.current.frontRightSteer = node;
+            }}
+            spinRef={(node) => {
+              if (wheelRefs) wheelRefs.current.frontRightSpin = node;
+            }}
+          />
+        </group>
 
-      {/* Rear Right Wheel (+X, +Z) */}
-      <group position={[halfTrackX, wheelRadius, rearAxleZ]}>
-        <WheelAssembly
-          radius={wheelRadius}
-          width={wheelWidth}
-          isRightSide={true}
-          isFront={false}
-          category={vehicle.category}
-          spinRef={(node) => {
-            if (wheelRefs) wheelRefs.current.rearRightSpin = node;
-          }}
-        />
+        {/* Rear Left (-X, +Z) */}
+        <group position={[-halfTrackX, wheelRadius, rearAxleZ]}>
+          <WheelAssembly
+            radius={wheelRadius}
+            width={wheelWidth}
+            isRightSide={false}
+            isFront={false}
+            category={vehicle.category}
+            spinRef={(node) => {
+              if (wheelRefs) wheelRefs.current.rearLeftSpin = node;
+            }}
+          />
+        </group>
+
+        {/* Rear Right (+X, +Z) */}
+        <group position={[halfTrackX, wheelRadius, rearAxleZ]}>
+          <WheelAssembly
+            radius={wheelRadius}
+            width={wheelWidth}
+            isRightSide={true}
+            isFront={false}
+            category={vehicle.category}
+            spinRef={(node) => {
+              if (wheelRefs) wheelRefs.current.rearRightSpin = node;
+            }}
+          />
+        </group>
       </group>
     </group>
   );

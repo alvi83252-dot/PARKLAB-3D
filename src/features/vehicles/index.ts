@@ -2,7 +2,20 @@
  * PARKLAB 3D — Vehicle System Public Exports (Joachim's Module)
  */
 
-export { VEHICLES, getVehicleById } from './vehicles';
+export {
+  VEHICLES,
+  getVehicleById,
+  getChassisSpec,
+  type VehicleChassisSpec,
+} from './vehicles';
+export {
+  VehicleModel,
+  createVehiclePartsRefs,
+  type VehicleModelProps,
+  type VehicleModelPartsRefs,
+  type VehicleWheelRefs,
+  type VehicleLightRefs,
+} from './VehicleModels';
 export {
   VehicleController,
   type VehicleControllerProps,

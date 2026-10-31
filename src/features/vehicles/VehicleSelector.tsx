@@ -77,18 +77,49 @@ function VehicleSilhouetteSvg({
     );
   }
 
-  // Sports / New Tesla Roadster aerodynamic wedge silhouette
+  // Flying Tesla Roadster: Levitating aerodynamic wedge with cyan hover pods & rear thruster plume
   return (
     <svg viewBox="0 0 96 32" aria-hidden="true">
+      {/* Ground anti-gravity hover ring */}
+      <ellipse
+        cx="48"
+        cy="27.5"
+        rx="34"
+        ry="2.2"
+        fill="rgba(56, 189, 248, 0.2)"
+        stroke="#38bdf8"
+        strokeWidth="1"
+        strokeDasharray="4 2"
+      />
+      {/* Rear cold-gas rocket plume */}
+      <polygon points="86,14 96,11.5 96,17.5" fill="#38bdf8" opacity="0.85" />
+      {/* Hovering Roadster fuselage */}
       <path
-        d="M6 22 L12 16 L34 11 L52 7.5 L74 9.5 L89 13 L90 22 Z"
+        d="M6 18 L12 12 L34 7.5 L52 4.5 L74 6.5 L88 10.5 L88 18 Z"
         fill={color}
-        stroke="rgba(255,255,255,0.35)"
+        stroke="rgba(255,255,255,0.4)"
         strokeWidth="1.2"
       />
-      <path d="M33 11.5 L51 8.5 L71 10.5 L62 12.5 Z" fill="#090d16" />
-      <circle cx="24" cy="22" r="5.8" fill="#0f172a" stroke="#ef4444" strokeWidth="1.5" />
-      <circle cx="73" cy="22" r="5.8" fill="#0f172a" stroke="#ef4444" strokeWidth="1.5" />
+      <path d="M33 8 L51 5.2 L71 7.2 L62 9.5 Z" fill="#090d16" />
+      {/* Tilted Hover-Turbine Nacelles */}
+      <ellipse
+        cx="24"
+        cy="19.5"
+        rx="6.2"
+        ry="2.6"
+        fill="#0f172a"
+        stroke="#38bdf8"
+        strokeWidth="1.4"
+      />
+      <ellipse
+        cx="72"
+        cy="19.5"
+        rx="6.2"
+        ry="2.6"
+        fill="#0f172a"
+        stroke="#38bdf8"
+        strokeWidth="1.4"
+      />
     </svg>
   );
 }
@@ -97,7 +128,7 @@ const CATEGORY_LABELS: Record<VehicleCategory, string> = {
   hatchback: 'Hatchback',
   sedan: 'Sedan',
   suv: 'Large SUV',
-  sports: 'Roadster',
+  sports: 'Flying Roadster',
 };
 
 export function VehicleSelector({
@@ -112,7 +143,9 @@ export function VehicleSelector({
     getVehicleById(selectedVehicleId);
   const activeChassis = getChassisSpec(activeVehicle);
 
-  const topSpeedMph = Math.round(activeVehicle.handling.maxForwardSpeedMps * 2.23694);
+  const topSpeedMph = Math.round(
+    activeVehicle.handling.maxForwardSpeedMps * 2.23694
+  );
   const speedPercent = Math.min(
     100,
     Math.round((activeVehicle.handling.maxForwardSpeedMps / 16.5) * 100)
@@ -139,7 +172,11 @@ export function VehicleSelector({
         <span className="vk-selector__active-pill">{activeVehicle.name}</span>
       </div>
 
-      <div className="vk-selector__grid" role="radiogroup" aria-label="Available vehicles">
+      <div
+        className="vk-selector__grid"
+        role="radiogroup"
+        aria-label="Available vehicles"
+      >
         {vehicles.map((vehicle) => {
           const isSelected = vehicle.id === activeVehicle.id;
           const { length, width } = vehicle.dimensions;

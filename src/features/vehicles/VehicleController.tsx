@@ -1,7 +1,8 @@
 /**
  * PARKLAB 3D — Player Vehicle Controller (React Three Fiber)
  * Integrates keyboard input, arcade driving physics, OBB obstacle collision handling,
- * animated 3D procedural vehicle models, and throttled runtime telemetry reporting.
+ * animated 3D procedural vehicle models (including the Flying Tesla Roadster hover-thruster
+ * levitation dynamics), and throttled runtime telemetry reporting.
  */
 
 import { useEffect, useRef } from 'react';
@@ -13,7 +14,7 @@ import type {
   VehicleDefinition,
   VehicleRuntimeState,
 } from './types';
-import { VEHICLES } from './vehicles';
+import { getChassisSpec, VEHICLES } from './vehicles';
 import { useKeyboardControls } from './useKeyboardControls';
 import {
   createInitialPhysicsState,
@@ -87,6 +88,8 @@ export function VehicleController({
     brakeLightBar: null,
     reverseLightLeft: null,
     reverseLightRight: null,
+    thrusterGlow: null,
+    hoverRingGlow: null,
   });
 
   const inputRef = useKeyboardControls(enabled);
@@ -134,6 +137,7 @@ export function VehicleController({
       rootGroupRef.current.rotation.set(0, initialRotationY, 0);
     }
     if (chassisSuspensionRef.current) {
+      chassisSuspensionRef.current.position.set(0, 0, 0);
       chassisSuspensionRef.current.rotation.set(0, 0, 0);
     }
 
@@ -150,8 +154,10 @@ export function VehicleController({
   useFrame((frameState, delta) => {
     const physics = physicsRef.current;
     const elapsed = frameState.clock.getElapsedTime();
+    const chassisSpec = getChassisSpec(vehicle);
+    const isFlying = Boolean(chassisSpec.isFlyingVehicle);
 
-    // 1. Step driving kinematics
+    // 1. Step driving / flight-hover kinematics
     stepDrivingPhysics(physics, inputRef.current, vehicle, delta, enabled);
 
     // 2. Resolve collisions against challenge obstacles & outer world boundaries
@@ -201,15 +207,28 @@ export function VehicleController({
         shakeRoll = Math.cos(elapsed * 48) * shakeAmp;
       }
 
+      // Flying Roadster features active anti-gravity hover oscillation & aerodynamic banking
+      const hoverBobY = isFlying
+        ? Math.sin(elapsed * 3.4) * 0.042 +
+          Math.min(Math.abs(physics.speedMps) * 0.012, 0.09)
+        : 0;
+      const pitchGain = isFlying ? 1.85 : 1.0;
+      const rollGain = isFlying ? 2.25 : 1.0;
+
+      chassisSuspensionRef.current.position.set(0, hoverBobY, 0);
       chassisSuspensionRef.current.rotation.set(
-        physics.pitchRad + shakePitch,
+        physics.pitchRad * pitchGain + shakePitch,
         0,
-        physics.rollRad + shakeRoll
+        physics.rollRad * rollGain + shakeRoll
       );
     }
 
-    // 4. Update wheel steering & rolling rotation
+    // 4. Update wheel steering & rolling / hover-turbine rotation
     const wheels = wheelRefs.current;
+    const spinAngle = isFlying
+      ? physics.wheelSpinRad - elapsed * 9.5 // Continuous hover-fan turbine spin
+      : physics.wheelSpinRad;
+
     if (wheels.frontLeftSteer) {
       wheels.frontLeftSteer.rotation.y = physics.steeringAngle;
     }
@@ -217,19 +236,19 @@ export function VehicleController({
       wheels.frontRightSteer.rotation.y = physics.steeringAngle;
     }
     if (wheels.frontLeftSpin) {
-      wheels.frontLeftSpin.rotation.x = physics.wheelSpinRad;
+      wheels.frontLeftSpin.rotation.x = spinAngle;
     }
     if (wheels.frontRightSpin) {
-      wheels.frontRightSpin.rotation.x = physics.wheelSpinRad;
+      wheels.frontRightSpin.rotation.x = spinAngle;
     }
     if (wheels.rearLeftSpin) {
-      wheels.rearLeftSpin.rotation.x = physics.wheelSpinRad;
+      wheels.rearLeftSpin.rotation.x = spinAngle;
     }
     if (wheels.rearRightSpin) {
-      wheels.rearRightSpin.rotation.x = physics.wheelSpinRad;
+      wheels.rearRightSpin.rotation.x = spinAngle;
     }
 
-    // 5. Update dynamic brake & reverse lights via material refs
+    // 5. Update dynamic brake, reverse & SpaceX cold-gas thruster lights via material refs
     const lights = lightRefs.current;
     const brakeIntensity = physics.isBraking ? 2.6 : 0.85;
     if (lights.brakeLightLeft) {
@@ -248,6 +267,16 @@ export function VehicleController({
     }
     if (lights.reverseLightRight) {
       lights.reverseLightRight.emissiveIntensity = reverseIntensity;
+    }
+
+    if (lights.thrusterGlow) {
+      const speedNorm = Math.min(1, Math.abs(physics.speedMps) / 10);
+      lights.thrusterGlow.emissiveIntensity =
+        1.8 + speedNorm * 2.8 + Math.sin(elapsed * 24) * 0.35;
+    }
+    if (lights.hoverRingGlow) {
+      lights.hoverRingGlow.emissiveIntensity =
+        1.4 + Math.sin(elapsed * 4.5) * 0.4;
     }
 
     // 6. Emit throttled state updates to external consumers
