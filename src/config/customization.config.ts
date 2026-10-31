@@ -34,6 +34,12 @@ export type EnvironmentThemeId =
   | 'candy-wonderland'
   | 'mars-colony';
 
+export type CarTuningPresetId =
+  | 'authentic'
+  | 'pro-grip'
+  | 'drift-spec'
+  | 'heavy-duty';
+
 export interface CarCustomization {
   skinId: CarSkinId;
   /** Optional custom hex color override; `'default'` uses the vehicle/skin signature palette */
@@ -41,6 +47,27 @@ export interface CarCustomization {
   accessoryId: CarAccessoryId;
   underglowColor: string;
   applyToTraffic: boolean;
+  /** Real-physics tuning preset applied on top of the vehicle + skin physical properties */
+  tuningPreset?: CarTuningPresetId;
+}
+
+export interface CarSkinPhysicsModifier {
+  /** Relative chassis mass (1.0 = OEM steel/aluminium, <1 = light wood/cardboard/ABS, >1 = 24K gold bullion) */
+  massMultiplier: number;
+  /** Longitudinal acceleration multiplier */
+  accelerationMultiplier: number;
+  /** Braking deceleration multiplier */
+  brakingMultiplier: number;
+  /** Lateral tyre grip & cornering scrub multiplier */
+  gripMultiplier: number;
+  /** Collision bounce / restitution multiplier */
+  restitutionMultiplier: number;
+  /** Structural crash durability multiplier (>1 = tougher, <1 = crumples faster) */
+  durabilityMultiplier: number;
+  /** Suspension pitch/roll compliance multiplier */
+  suspensionCompliance: number;
+  /** Short physics description shown in the HUD / Customizer */
+  physicsSummary: string;
 }
 
 export interface CarSkinDefinition {
@@ -62,6 +89,7 @@ export interface CarSkinDefinition {
   wireframeOverlay?: boolean;
   wireframeColor?: string;
   defaultAccessory: Exclude<CarAccessoryId, 'auto'>;
+  physics: CarSkinPhysicsModifier;
 }
 
 export interface CarAccessoryDefinition {
@@ -134,6 +162,16 @@ export const CAR_SKINS: readonly CarSkinDefinition[] = [
     glassRoughness: 0.08,
     opacity: 1,
     defaultAccessory: 'none',
+    physics: {
+      massMultiplier: 1.0,
+      accelerationMultiplier: 1.0,
+      brakingMultiplier: 1.0,
+      gripMultiplier: 1.0,
+      restitutionMultiplier: 1.0,
+      durabilityMultiplier: 1.0,
+      suspensionCompliance: 1.0,
+      physicsSummary: 'Balanced OEM carbon-steel chassis mass, progressive crumple zones & road grip.',
+    },
   },
   {
     id: 'wooden',
@@ -152,6 +190,16 @@ export const CAR_SKINS: readonly CarSkinDefinition[] = [
     glassRoughness: 0.52,
     opacity: 1,
     defaultAccessory: 'windup-key',
+    physics: {
+      massMultiplier: 0.86,
+      accelerationMultiplier: 1.06,
+      brakingMultiplier: 0.96,
+      gripMultiplier: 0.94,
+      restitutionMultiplier: 1.12,
+      durabilityMultiplier: 0.94,
+      suspensionCompliance: 0.85,
+      physicsSummary: 'Solid oak timber mass (0.86x), crisp rigid joinery suspension & timber impact rebound.',
+    },
   },
   {
     id: 'lego',
@@ -170,6 +218,16 @@ export const CAR_SKINS: readonly CarSkinDefinition[] = [
     glassRoughness: 0.12,
     opacity: 1,
     defaultAccessory: 'lego-studs',
+    physics: {
+      massMultiplier: 0.78,
+      accelerationMultiplier: 1.12,
+      brakingMultiplier: 1.05,
+      gripMultiplier: 1.04,
+      restitutionMultiplier: 1.18,
+      durabilityMultiplier: 0.92,
+      suspensionCompliance: 0.82,
+      physicsSummary: 'Lightweight ABS brick chassis (0.78x), snappy torque & modular brick-detachment physics.',
+    },
   },
   {
     id: 'cyberpunk',
@@ -190,6 +248,16 @@ export const CAR_SKINS: readonly CarSkinDefinition[] = [
     wireframeOverlay: true,
     wireframeColor: '#00f5d4',
     defaultAccessory: 'holo-halo',
+    physics: {
+      massMultiplier: 1.05,
+      accelerationMultiplier: 1.14,
+      brakingMultiplier: 1.16,
+      gripMultiplier: 1.18,
+      restitutionMultiplier: 0.95,
+      durabilityMultiplier: 1.15,
+      suspensionCompliance: 1.08,
+      physicsSummary: 'Active magnetic downforce (1.18x grip), high-output synth-drive & reinforced cyber hull.',
+    },
   },
   {
     id: 'cardboard',
@@ -208,6 +276,16 @@ export const CAR_SKINS: readonly CarSkinDefinition[] = [
     glassRoughness: 0.78,
     opacity: 1,
     defaultAccessory: 'paper-wings',
+    physics: {
+      massMultiplier: 0.64,
+      accelerationMultiplier: 1.16,
+      brakingMultiplier: 1.08,
+      gripMultiplier: 0.92,
+      restitutionMultiplier: 0.88,
+      durabilityMultiplier: 0.86,
+      suspensionCompliance: 1.18,
+      physicsSummary: 'Ultralight corrugated kraft chassis (0.64x mass), agile launch & realistic boxboard crumple.',
+    },
   },
   {
     id: 'gummy',
@@ -226,6 +304,16 @@ export const CAR_SKINS: readonly CarSkinDefinition[] = [
     glassRoughness: 0.06,
     opacity: 0.78,
     defaultAccessory: 'instructor-beacon',
+    physics: {
+      massMultiplier: 0.92,
+      accelerationMultiplier: 1.04,
+      brakingMultiplier: 1.02,
+      gripMultiplier: 1.08,
+      restitutionMultiplier: 1.42,
+      durabilityMultiplier: 1.18,
+      suspensionCompliance: 1.32,
+      physicsSummary: 'Elastic gel-polymer body with high collision bounce restitution (1.42x) & shock absorption.',
+    },
   },
   {
     id: 'gold-chrome',
@@ -244,6 +332,16 @@ export const CAR_SKINS: readonly CarSkinDefinition[] = [
     glassRoughness: 0.04,
     opacity: 1,
     defaultAccessory: 'holo-halo',
+    physics: {
+      massMultiplier: 1.38,
+      accelerationMultiplier: 0.95,
+      brakingMultiplier: 0.94,
+      gripMultiplier: 1.06,
+      restitutionMultiplier: 0.92,
+      durabilityMultiplier: 1.26,
+      suspensionCompliance: 0.9,
+      physicsSummary: 'Heavy 24K bullion mass (1.38x) with high momentum inertia & armoured structural durability.',
+    },
   },
 ] as const;
 
@@ -554,6 +652,69 @@ export const CREATIVE_BUNDLES: readonly CreativeBundlePreset[] = [
   },
 ] as const;
 
+export interface CarTuningPresetDefinition {
+  id: CarTuningPresetId;
+  name: string;
+  badge: string;
+  description: string;
+  accelerationScale: number;
+  brakingScale: number;
+  gripScale: number;
+  durabilityScale: number;
+  restitutionScale: number;
+}
+
+export const CAR_TUNING_PRESETS: readonly CarTuningPresetDefinition[] = [
+  {
+    id: 'authentic',
+    name: 'Authentic Material Physics',
+    badge: 'Real Mass & Material',
+    description:
+      'True-to-material weight transfer, tyre grip, bounce restitution & structural crash crumple for the selected car craft.',
+    accelerationScale: 1.0,
+    brakingScale: 1.0,
+    gripScale: 1.0,
+    durabilityScale: 1.0,
+    restitutionScale: 1.0,
+  },
+  {
+    id: 'pro-grip',
+    name: 'Pro Track Downforce',
+    badge: 'Max Precision',
+    description:
+      'High-friction slick tyres and stiffer anti-roll dampers for surgical low-speed bay alignment and rapid braking.',
+    accelerationScale: 1.08,
+    brakingScale: 1.18,
+    gripScale: 1.24,
+    durabilityScale: 1.05,
+    restitutionScale: 0.9,
+  },
+  {
+    id: 'drift-spec',
+    name: 'Low-Grip Street Drift',
+    badge: 'Loose Rear',
+    description:
+      'Higher torque delivery with reduced lateral tyre scrub for lively tail-out slides and momentum-heavy cornering.',
+    accelerationScale: 1.16,
+    brakingScale: 0.92,
+    gripScale: 0.72,
+    durabilityScale: 0.96,
+    restitutionScale: 1.15,
+  },
+  {
+    id: 'heavy-duty',
+    name: 'Armoured Stunt Rig',
+    badge: 'Reinforced Hull',
+    description:
+      'Reinforced bumper mounts and heavy-duty suspension absorbing harder impacts before parts detach.',
+    accelerationScale: 0.96,
+    brakingScale: 1.06,
+    gripScale: 1.06,
+    durabilityScale: 1.38,
+    restitutionScale: 0.88,
+  },
+] as const;
+
 export interface ParklabCustomizationState {
   car: CarCustomization;
   environmentId: EnvironmentThemeId;
@@ -566,6 +727,7 @@ export const DEFAULT_CUSTOMIZATION_STATE: ParklabCustomizationState = {
     accessoryId: 'auto',
     underglowColor: '#38bdf8',
     applyToTraffic: true,
+    tuningPreset: 'authentic',
   },
   environmentId: 'uk-test-centre',
 };
@@ -578,6 +740,14 @@ export function getCarSkinById(
 ): CarSkinDefinition {
   return (
     CAR_SKINS.find((s) => s.id === skinId) ?? CAR_SKINS[0]
+  );
+}
+
+export function getCarTuningById(
+  tuningId?: CarTuningPresetId | string | null
+): CarTuningPresetDefinition {
+  return (
+    CAR_TUNING_PRESETS.find((t) => t.id === tuningId) ?? CAR_TUNING_PRESETS[0]
   );
 }
 
@@ -596,6 +766,90 @@ export function resolveEffectiveAccessory(
     return car.accessoryId;
   }
   return getCarSkinById(car.skinId).defaultAccessory;
+}
+
+export interface EffectiveCustomCarPhysics {
+  skin: CarSkinDefinition;
+  tuning: CarTuningPresetDefinition;
+  accessory: Exclude<CarAccessoryId, 'auto'>;
+  /** Resolved paint color for chassis & detached crash debris */
+  effectiveBodyColor: (fallbackVehicleColor: string) => string;
+  massMultiplier: number;
+  accelerationMultiplier: number;
+  brakingMultiplier: number;
+  gripMultiplier: number;
+  restitutionMultiplier: number;
+  durabilityMultiplier: number;
+  suspensionCompliance: number;
+  physicsSummary: string;
+}
+
+/**
+ * Computes the combined real-world physics multipliers for any customized car
+ * (skin material mass/restitution + roof accessory aerodynamics + tuning preset).
+ */
+export function resolveEffectiveCarPhysics(
+  car: CarCustomization = loadCustomizationState().car
+): EffectiveCustomCarPhysics {
+  const skin = getCarSkinById(car.skinId);
+  const tuning = getCarTuningById(car.tuningPreset);
+  const accessory = resolveEffectiveAccessory(car);
+
+  // Roof accessories add subtle real-world physical effects
+  const accAccelBonus = accessory === 'windup-key' ? 1.04 : 1.0;
+  const accGripBonus =
+    accessory === 'holo-halo'
+      ? 1.05
+      : accessory === 'paper-wings'
+        ? 1.03
+        : 1.0;
+  const accMassDelta =
+    accessory === 'lego-studs'
+      ? 1.02
+      : accessory === 'paper-wings'
+        ? 0.97
+        : 1.0;
+
+  return {
+    skin,
+    tuning,
+    accessory,
+    effectiveBodyColor: (fallbackVehicleColor: string) => {
+      if (car.customColor && car.customColor !== 'default') {
+        return car.customColor;
+      }
+      if (skin.id === 'factory') {
+        return fallbackVehicleColor;
+      }
+      return skin.primaryColor;
+    },
+    massMultiplier: Number((skin.physics.massMultiplier * accMassDelta).toFixed(2)),
+    accelerationMultiplier: Number(
+      (
+        skin.physics.accelerationMultiplier *
+        tuning.accelerationScale *
+        accAccelBonus
+      ).toFixed(2)
+    ),
+    brakingMultiplier: Number(
+      (skin.physics.brakingMultiplier * tuning.brakingScale).toFixed(2)
+    ),
+    gripMultiplier: Number(
+      (
+        skin.physics.gripMultiplier *
+        tuning.gripScale *
+        accGripBonus
+      ).toFixed(2)
+    ),
+    restitutionMultiplier: Number(
+      (skin.physics.restitutionMultiplier * tuning.restitutionScale).toFixed(2)
+    ),
+    durabilityMultiplier: Number(
+      (skin.physics.durabilityMultiplier * tuning.durabilityScale).toFixed(2)
+    ),
+    suspensionCompliance: skin.physics.suspensionCompliance,
+    physicsSummary: `${skin.physics.physicsSummary} (${tuning.name})`,
+  };
 }
 
 export function loadCustomizationState(): ParklabCustomizationState {
@@ -724,6 +978,19 @@ export function useCustomization() {
     [updateCustomization]
   );
 
+  const setTuningPreset = useCallback(
+    (tuningPreset: CarTuningPresetId) => {
+      updateCustomization((prev) => ({
+        ...prev,
+        car: {
+          ...prev.car,
+          tuningPreset,
+        },
+      }));
+    },
+    [updateCustomization]
+  );
+
   const setApplyToTraffic = useCallback(
     (applyToTraffic: boolean) => {
       updateCustomization((prev) => ({
@@ -749,16 +1016,17 @@ export function useCustomization() {
 
   const applyBundle = useCallback(
     (bundle: CreativeBundlePreset) => {
-      updateCustomization({
+      updateCustomization((prev) => ({
         car: {
           skinId: bundle.skinId,
           customColor: bundle.customColor,
           accessoryId: bundle.accessoryId,
           underglowColor: '#38bdf8',
           applyToTraffic: true,
+          tuningPreset: prev.car.tuningPreset ?? 'authentic',
         },
         environmentId: bundle.environmentId,
-      });
+      }));
     },
     [updateCustomization]
   );
@@ -767,9 +1035,11 @@ export function useCustomization() {
     customization: state,
     skinSpec: getCarSkinById(state.car.skinId),
     themeSpec: getEnvironmentThemeById(state.environmentId),
+    effectivePhysics: resolveEffectiveCarPhysics(state.car),
     setCarSkin,
     setCustomColor,
     setAccessory,
+    setTuningPreset,
     setApplyToTraffic,
     setEnvironmentTheme,
     applyBundle,

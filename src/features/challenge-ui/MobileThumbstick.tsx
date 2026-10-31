@@ -2,38 +2,16 @@
  * PARKLAB 3D — Mobile Virtual Thumbstick (Right) & Touch Handbrake (Left)
  *
  * Ergonomic dual-thumb mobile layout:
- * - Left Thumb (Bottom-Left): Dedicated STOP / BRAKE pedal (`Space` handbrake)
- * - Right Thumb (Bottom-Right): 360° Drive & Steer thumbstick (`KeyW`, `KeyS`, `KeyA`, `KeyD`)
+ * - Left Thumb (Bottom-Left): Dedicated BRAKE / STOP pedal (`handbrake`)
+ * - Right Thumb (Bottom-Right): 360° Drive & Steer thumbstick (`accelerate`, `brakeOrReverse`, `steerLeft`, `steerRight`)
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { setVirtualDrivingInput } from '../vehicles/useKeyboardControls';
 import './challenge-ui.css';
-
-type ThumbstickKeyCode = 'KeyW' | 'KeyS' | 'KeyA' | 'KeyD' | 'Space';
-
-const KEY_CHAR_MAP: Record<ThumbstickKeyCode, string> = {
-  KeyW: 'w',
-  KeyS: 's',
-  KeyA: 'a',
-  KeyD: 'd',
-  Space: ' ',
-};
 
 const STICK_RADIUS_PX = 48;
 const DEADZONE_RATIO = 0.24;
-
-function dispatchDrivingKey(type: 'keydown' | 'keyup', code: ThumbstickKeyCode) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-  const event = new KeyboardEvent(type, {
-    code,
-    key: KEY_CHAR_MAP[code],
-    bubbles: true,
-    cancelable: true,
-  });
-  window.dispatchEvent(event);
-}
 
 export interface MobileThumbstickProps {
   /** Force-show thumbstick even on desktop viewports when enabled */
@@ -45,7 +23,6 @@ export function MobileThumbstick({
 }: MobileThumbstickProps) {
   const baseRef = useRef<HTMLDivElement | null>(null);
   const activePointerIdRef = useRef<number | null>(null);
-  const pressedKeysRef = useRef<Set<ThumbstickKeyCode>>(new Set());
 
   const [knobOffset, setKnobOffset] = useState<{ x: number; y: number }>({
     x: 0,
@@ -54,51 +31,21 @@ export function MobileThumbstick({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isBrakingTouch, setIsBrakingTouch] = useState<boolean>(false);
 
-  const syncDirectionKeys = useCallback(
-    (normX: number, normY: number) => {
-      const desired = new Set<ThumbstickKeyCode>();
+  const syncDirectionInputs = useCallback((normX: number, normY: number) => {
+    // Vertical axis: negative Y is UP (Accelerate), positive Y is DOWN (Brake / Reverse)
+    setVirtualDrivingInput('accelerate', normY < -DEADZONE_RATIO);
+    setVirtualDrivingInput('brakeOrReverse', normY > DEADZONE_RATIO);
 
-      // Vertical axis: negative Y is UP (Accelerate / KeyW), positive Y is DOWN (Reverse / KeyS)
-      if (normY < -DEADZONE_RATIO) {
-        desired.add('KeyW');
-      } else if (normY > DEADZONE_RATIO) {
-        desired.add('KeyS');
-      }
+    // Horizontal axis: negative X is LEFT (Steer Left), positive X is RIGHT (Steer Right)
+    setVirtualDrivingInput('steerLeft', normX < -DEADZONE_RATIO);
+    setVirtualDrivingInput('steerRight', normX > DEADZONE_RATIO);
+  }, []);
 
-      // Horizontal axis: negative X is LEFT (Steer Left / KeyA), positive X is RIGHT (Steer Right / KeyD)
-      if (normX < -DEADZONE_RATIO) {
-        desired.add('KeyA');
-      } else if (normX > DEADZONE_RATIO) {
-        desired.add('KeyD');
-      }
-
-      const current = pressedKeysRef.current;
-
-      // Release keys no longer active
-      for (const code of Array.from(current)) {
-        if (code !== 'Space' && !desired.has(code)) {
-          current.delete(code);
-          dispatchDrivingKey('keyup', code);
-        }
-      }
-
-      // Press newly active keys
-      for (const code of desired) {
-        if (!current.has(code)) {
-          current.add(code);
-          dispatchDrivingKey('keydown', code);
-        }
-      }
-    },
-    []
-  );
-
-  const releaseAllStickKeys = useCallback(() => {
-    const current = pressedKeysRef.current;
-    for (const code of Array.from(current)) {
-      current.delete(code);
-      dispatchDrivingKey('keyup', code);
-    }
+  const releaseAllStickInputs = useCallback(() => {
+    setVirtualDrivingInput('accelerate', false);
+    setVirtualDrivingInput('brakeOrReverse', false);
+    setVirtualDrivingInput('steerLeft', false);
+    setVirtualDrivingInput('steerRight', false);
     activePointerIdRef.current = null;
     setIsDragging(false);
     setKnobOffset({ x: 0, y: 0 });
@@ -127,9 +74,9 @@ export function MobileThumbstick({
 
       const normX = clampedX / STICK_RADIUS_PX;
       const normY = clampedY / STICK_RADIUS_PX;
-      syncDirectionKeys(normX, normY);
+      syncDirectionInputs(normX, normY);
     },
-    [syncDirectionKeys]
+    [syncDirectionInputs]
   );
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -154,7 +101,7 @@ export function MobileThumbstick({
       return;
     }
     e.preventDefault();
-    releaseAllStickKeys();
+    releaseAllStickInputs();
   };
 
   const handleBrakeDown = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -162,26 +109,21 @@ export function MobileThumbstick({
     e.stopPropagation();
     e.currentTarget.setPointerCapture?.(e.pointerId);
     setIsBrakingTouch(true);
-    if (!pressedKeysRef.current.has('Space')) {
-      pressedKeysRef.current.add('Space');
-      dispatchDrivingKey('keydown', 'Space');
-    }
+    setVirtualDrivingInput('handbrake', true);
   };
 
   const handleBrakeUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsBrakingTouch(false);
-    if (pressedKeysRef.current.has('Space')) {
-      pressedKeysRef.current.delete('Space');
-      dispatchDrivingKey('keyup', 'Space');
-    }
+    setVirtualDrivingInput('handbrake', false);
   };
 
   useEffect(() => {
     return () => {
-      releaseAllStickKeys();
+      releaseAllStickInputs();
+      setVirtualDrivingInput('handbrake', false);
     };
-  }, [releaseAllStickKeys]);
+  }, [releaseAllStickInputs]);
 
   return (
     <div

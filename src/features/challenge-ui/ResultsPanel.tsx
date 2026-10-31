@@ -1,25 +1,37 @@
 /**
  * PARKLAB 3D — ResultsPanel Component
  *
- * Displays deterministic manoeuvre assessment results:
+ * Displays deterministic manoeuvre assessment results + Gamified XP & Leaderboard:
  * - PASS or TRY AGAIN verdict badge
  * - Score out of 100 and 0–3 star rating
+ * - Gamified Points Breakdown (+XP Earned, Streak Multiplier, Clean Car Bonus,
+ *   Time Blitz Bonus, SpaceX Sky-Flight Landing Bonus, Driver Level & Rank)
+ * - Live Global Park Master Leaderboard Standings (ARTHUR, YUSUFDEMIR201, YOU)
  * - Collisions, position accuracy, alignment accuracy, elapsed time, and corrections
  * - Detailed examiner feedback list
- * - Optional RAG Attempt-over-Attempt Progression & Crash Coaching Summary
  * - Controlled Retry and Next Challenge action callbacks
  */
 
+import { useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
   Award,
   Film,
+  Flame,
   History,
+  Rocket,
   RotateCcw,
   Sparkles,
   Star,
+  Trophy,
 } from 'lucide-react';
+import {
+  getLeaderboardStandings,
+  loadDriverProfile,
+  type AttemptPointsBreakdown,
+  type DriverProfile,
+} from '../leaderboard/leaderboardStore';
 import type {
   ParkingChallengeDefinition,
   ParkingEvaluationResult,
@@ -39,9 +51,15 @@ export interface ResultsPanelProps {
   attemptComparison?: AttemptComparisonDelta | null;
   /** Optional most recent crash coaching report from this attempt */
   recentCrashReport?: AICrashFeedbackReport | null;
+  /** Optional gamified points breakdown for this attempt */
+  pointsBreakdown?: AttemptPointsBreakdown | null;
+  /** Optional updated driver profile */
+  driverProfile?: DriverProfile;
+  /** Optional active vehicle name for leaderboard row */
+  vehicleName?: string;
   /** Controlled callback to retry the current challenge */
   onRetry: () => void;
-  /** Optional callback to watch the recorded replay of this attempt */
+  /** Optional callback to watch 3D replay (ONLY provided when a challenge is completed/passed) */
   onWatchReplay?: () => void;
   /** Controlled callback to advance to the next challenge */
   onNextChallenge?: () => void;
@@ -54,12 +72,19 @@ export function ResultsPanel({
   challenge,
   attemptComparison,
   recentCrashReport,
+  pointsBreakdown,
+  driverProfile: propProfile,
+  vehicleName = 'New Tesla Roadster',
   onRetry,
   onWatchReplay,
   onNextChallenge,
   onNext,
 }: ResultsPanelProps) {
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const handleNext = onNextChallenge ?? onNext;
+
+  const profile = propProfile ?? loadDriverProfile();
+  const standings = getLeaderboardStandings(profile, vehicleName);
 
   const positionAccuracyPercent = Math.max(
     0,
@@ -80,25 +105,40 @@ export function ResultsPanel({
       {/* Top Verdict & Score Banner */}
       <header className="pk-results__banner">
         <div className="pk-results__status-group">
-          <span
-            className={`pk-results__verdict-pill ${
-              result.passed
-                ? 'pk-results__verdict-pill--pass'
-                : 'pk-results__verdict-pill--fail'
-            }`}
-          >
-            {result.passed ? (
-              <>
-                <Award size={14} aria-hidden="true" />
-                <span>PASS</span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={14} aria-hidden="true" />
-                <span>TRY AGAIN</span>
-              </>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span
+              className={`pk-results__verdict-pill ${
+                result.passed
+                  ? 'pk-results__verdict-pill--pass'
+                  : 'pk-results__verdict-pill--fail'
+              }`}
+            >
+              {result.passed ? (
+                <>
+                  <Award size={14} aria-hidden="true" />
+                  <span>PASS</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle size={14} aria-hidden="true" />
+                  <span>TRY AGAIN</span>
+                </>
+              )}
+            </span>
+
+            <span className="pk-results__rank-pill">
+              <Trophy size={12} aria-hidden="true" />
+              <span>
+                LV {profile.level} · {profile.rankTitle}
+              </span>
+            </span>
+
+            {pointsBreakdown && (
+              <span className="pk-results__xp-pill">
+                +{pointsBreakdown.totalEarnedPoints.toLocaleString()} PTS
+              </span>
             )}
-          </span>
+          </div>
 
           <h2 id="pk-results-verdict-heading" className="pk-results__title">
             {result.passed ? 'Manoeuvre Passed' : 'Manoeuvre Incomplete'}
@@ -139,6 +179,56 @@ export function ResultsPanel({
           </div>
         </div>
       </header>
+
+      {/* Gamified XP Breakdown Strip */}
+      {pointsBreakdown && (
+        <div className="pk-results__xp-breakdown">
+          <div className="pk-results__xp-header">
+            <span className="pk-results__xp-title">
+              <Flame size={13} aria-hidden="true" />
+              <span>GAMIFIED SCORE &amp; BONUS BREAKDOWN</span>
+            </span>
+            <strong className="pk-results__xp-total">
+              +{pointsBreakdown.totalEarnedPoints.toLocaleString()} PTS (TOTAL:{' '}
+              {profile.totalPoints.toLocaleString()} PTS)
+            </strong>
+          </div>
+
+          <div className="pk-results__xp-chips">
+            <span className="pk-results__xp-chip">
+              Base Score: +{pointsBreakdown.basePoints}
+            </span>
+            {pointsBreakdown.timeBlitzBonus > 0 && (
+              <span className="pk-results__xp-chip pk-results__xp-chip--bonus">
+                Time Blitz: +{pointsBreakdown.timeBlitzBonus}
+              </span>
+            )}
+            {pointsBreakdown.cleanCarBonus > 0 && (
+              <span className="pk-results__xp-chip pk-results__xp-chip--clean">
+                Zero-Scratch Clean: +{pointsBreakdown.cleanCarBonus}
+              </span>
+            )}
+            {pointsBreakdown.precisionBonus > 0 && (
+              <span className="pk-results__xp-chip pk-results__xp-chip--bonus">
+                Laser Precision: +{pointsBreakdown.precisionBonus}
+              </span>
+            )}
+            {pointsBreakdown.skyFlightBonus > 0 && (
+              <span className="pk-results__xp-chip pk-results__xp-chip--flight">
+                <Rocket size={11} aria-hidden="true" />
+                Sky-Flight ({pointsBreakdown.maxAltitudeMeters}m): +
+                {pointsBreakdown.skyFlightBonus}
+              </span>
+            )}
+            {pointsBreakdown.streakMultiplier > 1 && (
+              <span className="pk-results__xp-chip pk-results__xp-chip--streak">
+                Hot Streak ({pointsBreakdown.streakCount}x): ×
+                {pointsBreakdown.streakMultiplier}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Telemetry Breakdown Grid */}
       <div className="pk-results__metrics-grid">
@@ -225,32 +315,72 @@ export function ResultsPanel({
         </div>
       )}
 
-      {/* Examiner Feedback List */}
-      <div className="pk-results__feedback-box">
-        <h3 className="pk-results__feedback-heading">Examiner Feedback</h3>
-        <ul className="pk-results__feedback-list">
-          {result.feedback.map((item, idx) => (
-            <li key={`feedback-${idx}`} className="pk-results__feedback-item">
-              <span className="pk-results__feedback-dot" aria-hidden="true" />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
+      {/* Toggleable Examiner Feedback vs Global Leaderboard */}
+      <div className="pk-results__tab-row">
+        <button
+          type="button"
+          className={`pk-results__tab-btn ${!showLeaderboard ? 'is-active' : ''}`}
+          onClick={() => setShowLeaderboard(false)}
+        >
+          Examiner Feedback
+        </button>
+        <button
+          type="button"
+          className={`pk-results__tab-btn ${showLeaderboard ? 'is-active' : ''}`}
+          onClick={() => setShowLeaderboard(true)}
+        >
+          <Trophy size={13} aria-hidden="true" />
+          <span>Park Master Leaderboard</span>
+        </button>
       </div>
+
+      {!showLeaderboard ? (
+        <div className="pk-results__feedback-box">
+          <h3 className="pk-results__feedback-heading">Examiner Feedback</h3>
+          <ul className="pk-results__feedback-list">
+            {result.feedback.map((item, idx) => (
+              <li key={`feedback-${idx}`} className="pk-results__feedback-item">
+                <span className="pk-results__feedback-dot" aria-hidden="true" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="pk-results__leaderboard-box">
+          {standings.slice(0, 6).map((entry) => (
+            <div
+              key={entry.id}
+              className={`pk-results__lb-row ${
+                entry.isPlayer ? 'pk-results__lb-row--player' : ''
+              }`}
+            >
+              <span className="pk-results__lb-rank">#{entry.rank}</span>
+              <span
+                className="pk-results__lb-lv"
+                style={{ borderColor: entry.badgeColor }}
+              >
+                LV {entry.level}
+              </span>
+              <div className="pk-results__lb-driver">
+                <strong>
+                  {entry.driverName}
+                  {entry.isPlayer ? ' (YOU)' : ''}
+                </strong>
+                <span>
+                  {entry.rankTitle} · {entry.signatureVehicle}
+                </span>
+              </div>
+              <strong className="pk-results__lb-pts">
+                {entry.totalPoints.toLocaleString()} PTS
+              </strong>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Controlled Action Buttons */}
       <footer className="pk-results__actions">
-        {onWatchReplay && (
-          <button
-            type="button"
-            className="pk-btn pk-btn--secondary"
-            onClick={onWatchReplay}
-          >
-            <Film size={14} aria-hidden="true" />
-            <span>Watch Attempt Replay</span>
-          </button>
-        )}
-
         <button
           type="button"
           className="pk-btn pk-btn--secondary"
@@ -259,6 +389,17 @@ export function ResultsPanel({
           <RotateCcw size={14} aria-hidden="true" />
           <span>Retry</span>
         </button>
+
+        {result.passed && onWatchReplay && (
+          <button
+            type="button"
+            className="pk-btn pk-btn--replay"
+            onClick={onWatchReplay}
+          >
+            <Film size={14} aria-hidden="true" />
+            <span>Watch Replay</span>
+          </button>
+        )}
 
         {handleNext && (
           <button

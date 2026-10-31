@@ -383,3 +383,42 @@ export const TREE_PLANTERS: TreePlanterSpec[] = [
   { id: 'tree-s-1', position: [-28.0, 0, 45.0], scale: 1.1, treeType: 'conical' },
   { id: 'tree-s-2', position: [28.0, 0, 45.0], scale: 1.1, treeType: 'conical' },
 ];
+
+import type { ObstacleDefinition } from '../../../types/challenge.types';
+
+/**
+ * Physical collision obstacles for the perimeter parked vehicles, buildings, and lamp posts
+ * in the UK Driving Test Facility so crashing into any facility object triggers real crash physics.
+ */
+export const FACILITY_STATIC_OBSTACLES: ObstacleDefinition[] = [
+  ...DECORATIVE_PARKED_VEHICLES.map((v) => ({
+    id: `facility-car-${v.id}`,
+    kind: 'parked-car' as const,
+    label: v.name,
+    position: v.position,
+    rotationY: v.rotationY,
+    dimensions: v.dimensions,
+    color: v.bodyColor,
+  })),
+  ...SURROUNDING_BUILDINGS.map((b) => ({
+    id: `facility-bldg-${b.id}`,
+    kind: 'building' as const,
+    label: b.name,
+    position: b.position,
+    rotationY: b.rotationY ?? 0,
+    dimensions: {
+      width: b.dimensions[0],
+      height: b.dimensions[1],
+      length: b.dimensions[2],
+    },
+    color: b.primaryColor,
+  })),
+  ...STREETLIGHTS.map((l) => ({
+    id: `facility-lamp-${l.id}`,
+    kind: 'lamppost' as const,
+    label: 'Streetlight Column',
+    position: l.position,
+    rotationY: l.rotationY,
+    dimensions: { width: 0.45, height: 6.5, length: 0.45 },
+  })),
+];
